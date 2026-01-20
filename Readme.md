@@ -1,10 +1,4 @@
-# 🎓 Educational Game Hub
-
-**John Bryce Full Stack Web Development | Final Project**
-
-**Student:** Golan Galant
-
-**Professor:** Eyal Goldstein
+# 🎓 Educational Game Hub by Golan Galant
 
 ---
 

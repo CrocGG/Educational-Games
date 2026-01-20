@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import api from "../services/api";
 
 // --- Constants & Config ---
@@ -293,7 +293,6 @@ export default function SnakeGame({
         ctx.closePath();
         break;
       case "Star": {
-        // <--- FIXED: Added Curly Braces for Block Scope
         const spikes = 5;
         const outerRadius = size;
         const innerRadius = size / 2;
@@ -313,7 +312,7 @@ export default function SnakeGame({
         ctx.lineTo(fx, fy - outerRadius);
         ctx.closePath();
         break;
-      } // <--- Closed Curly Braces
+      }
       case "Circle":
       default:
         ctx.arc(fx, fy, size, 0, Math.PI * 2);
@@ -363,72 +362,252 @@ export default function SnakeGame({
   }, [dir, countdown]);
 
   return (
-    <div style={overlayStyle}>
-      <div style={containerStyle}>
-        <div style={headerStyle}>
-          <button onClick={startGame} style={btnStyle}>
-            Start Game
-          </button>
-          <button
-            onClick={() => setPaused(!paused)}
-            disabled={!running || countdown > 0}
-            style={btnStyle}
-          >
-            {paused ? "Resume" : "Pause"}
-          </button>
-          <button
-            onClick={onClose}
-            style={{ ...btnStyle, background: "#dc3545", color: "white" }}
-          >
-            Exit
-          </button>
-        </div>
+    <>
+      <style>{`
+        .snake-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.95);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 1000;
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .snake-container {
+          background: #1e1e1e;
+          padding: 20px;
+          border-radius: 16px;
+          border: 1px solid #333;
+          box-shadow: 0 0 50px rgba(0, 0, 0, 0.8), 0 0 20px rgba(46, 204, 113, 0.1);
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          gap: 15px;
+        }
+        .snake-header {
+          display: flex;
+          gap: 12px;
+        }
+        .btn {
+          flex: 1;
+          padding: 12px;
+          cursor: pointer;
+          border: none;
+          border-radius: 8px;
+          font-weight: 700;
+          font-size: 14px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          transition: all 0.2s ease;
+          color: white;
+          box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          filter: grayscale(1);
+        }
+        .btn:active {
+          transform: translateY(2px);
+          box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        
+        /* Start Button - Green */
+        .btn-start {
+          background: linear-gradient(135deg, #2ecc71, #27ae60);
+        }
+        .btn-start:hover:not(:disabled) {
+          background: linear-gradient(135deg, #27ae60, #2ecc71);
+          box-shadow: 0 0 15px rgba(46, 204, 113, 0.5);
+        }
 
-        <div style={infoStyle}>
-          Record: {currentHighScore} | Score: {score}
-        </div>
+        /* Pause Button - Amber */
+        .btn-pause {
+          background: linear-gradient(135deg, #f1c40f, #f39c12);
+          color: #1a1a1a;
+        }
+        .btn-pause:hover:not(:disabled) {
+          background: linear-gradient(135deg, #f39c12, #f1c40f);
+        }
 
-        <canvas
-          ref={canvasRef}
-          width={CANVAS_SIZE}
-          height={CANVAS_SIZE}
-          style={canvasStyle}
-        />
+        /* Exit Button - Red */
+        .btn-exit {
+          background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+        .btn-exit:hover {
+          background: linear-gradient(135deg, #c0392b, #e74c3c);
+          box-shadow: 0 0 15px rgba(231, 76, 60, 0.4);
+        }
 
-        <div style={controlsStyle}>
-          {renderSelect("Color", snakeColor, setSnakeColor, SNAKE_COLORS)}
-          {renderSelect("BG", bgColor, setBgColor, BG_COLORS)}
-          {renderSelect("Fruit", fruitShape, setFruitShape, FOOD_SHAPES)}
-          {renderSelect(
-            "Diff",
-            difficulty,
-            setDifficulty,
-            Object.keys(SPEED_MAP)
-          )}
-        </div>
+        .info-panel {
+          display: flex;
+          justify-content: space-between;
+          background: #000;
+          padding: 10px 20px;
+          border-radius: 8px;
+          border: 1px solid #333;
+          color: #2ecc71;
+          font-family: 'Courier New', monospace;
+          font-size: 18px;
+          font-weight: bold;
+          text-shadow: 0 0 5px rgba(46, 204, 113, 0.5);
+        }
 
-        {gameOver && (
-          <div style={modalOverlay}>
-            <h1
-              style={{
-                fontSize: "3rem",
-                margin: "0 0 20px 0",
-                color: "white",
-                textShadow: "2px 2px red",
-              }}
+        canvas {
+          background: #000;
+          border-radius: 4px;
+          border: 4px solid #333;
+          display: block;
+          box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        .controls-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 15px;
+          padding: 15px;
+          background: #2a2a2a;
+          border-radius: 12px;
+        }
+
+        .control-group {
+          display: flex;
+          flex-direction: column;
+          gap: 5px;
+        }
+
+        .control-label {
+          font-size: 11px;
+          color: #aaa;
+          text-transform: uppercase;
+          font-weight: bold;
+        }
+
+        .control-select {
+          padding: 8px;
+          background: #1a1a1a;
+          color: white;
+          border: 1px solid #444;
+          border-radius: 6px;
+          cursor: pointer;
+          outline: none;
+          font-size: 13px;
+        }
+        .control-select:focus {
+          border-color: #2ecc71;
+        }
+
+        .modal-overlay {
+          position: absolute;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.85);
+          backdrop-filter: blur(4px);
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          border-radius: 16px;
+          z-index: 20;
+          animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        .game-over-title {
+          font-size: 3.5rem;
+          margin: 0 0 20px 0;
+          color: #fff;
+          font-weight: 800;
+          text-shadow: 4px 4px 0px #c0392b;
+          font-family: 'Arial Black', sans-serif;
+        }
+
+        .game-over-score {
+          font-size: 1.5rem;
+          color: #ecf0f1;
+          margin-bottom: 30px;
+        }
+
+        .btn-restart {
+          background: linear-gradient(135deg, #2ecc71, #27ae60);
+          color: white;
+          padding: 15px 50px;
+          font-size: 20px;
+          border: none;
+          border-radius: 50px;
+          cursor: pointer;
+          font-weight: bold;
+          text-transform: uppercase;
+          box-shadow: 0 0 20px rgba(46, 204, 113, 0.4);
+          transition: all 0.2s;
+        }
+        .btn-restart:hover {
+          transform: scale(1.05);
+          box-shadow: 0 0 30px rgba(46, 204, 113, 0.6);
+        }
+      `}</style>
+
+      <div className="snake-overlay">
+        <div className="snake-container">
+          <div className="info-panel">
+            <span>HIGH SCORE: {currentHighScore}</span>
+            <span>SCORE: {score}</span>
+          </div>
+
+          <div className="snake-header">
+            <button
+              onClick={startGame}
+              className="btn btn-start"
+              disabled={running && !gameOver}
             >
-              GAME OVER
-            </h1>
-            <p style={{ fontSize: "1.5rem", color: "#ccc" }}>
-              Final Score: {score}
-            </p>
-            <button onClick={startGame} style={restartBtnStyle}>
-              Restart
+              {running ? "Restart" : "Start Game"}
+            </button>
+            <button
+              onClick={() => setPaused(!paused)}
+              disabled={!running || countdown > 0}
+              className="btn btn-pause"
+            >
+              {paused ? "Resume" : "Pause"}
+            </button>
+            <button onClick={onClose} className="btn btn-exit">
+              Exit
             </button>
           </div>
-        )}
+
+          <canvas
+            ref={canvasRef}
+            width={CANVAS_SIZE}
+            height={CANVAS_SIZE}
+          />
+
+          <div className="controls-grid">
+            {renderSelect("Snake Color", snakeColor, setSnakeColor, SNAKE_COLORS)}
+            {renderSelect("Background", bgColor, setBgColor, BG_COLORS)}
+            {renderSelect("Food Shape", fruitShape, setFruitShape, FOOD_SHAPES)}
+            {renderSelect(
+              "Difficulty",
+              difficulty,
+              setDifficulty,
+              Object.keys(SPEED_MAP)
+            )}
+          </div>
+
+          {gameOver && (
+            <div className="modal-overlay">
+              <h1 className="game-over-title">GAME OVER</h1>
+              <p className="game-over-score">Final Score: {score}</p>
+              <button onClick={startGame} className="btn-restart">
+                Try Again
+              </button>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -438,19 +617,12 @@ const renderSelect = (
   setVal: any,
   opts: string[]
 ) => (
-  <div
-    style={{
-      display: "flex",
-      flexDirection: "column",
-      fontSize: "12px",
-      minWidth: "80px",
-    }}
-  >
-    <label style={{ marginBottom: "4px", color: "#aaa" }}>{label}</label>
+  <div className="control-group">
+    <label className="control-label">{label}</label>
     <select
       value={val}
       onChange={(e) => setVal(e.target.value)}
-      style={selectStyle}
+      className="control-select"
     >
       {opts.map((o) => (
         <option key={o} value={o}>
@@ -460,90 +632,3 @@ const renderSelect = (
     </select>
   </div>
 );
-
-// --- CSS Objects ---
-const overlayStyle: React.CSSProperties = {
-  position: "fixed",
-  inset: 0,
-  background: "rgba(0,0,0,0.95)",
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-  zIndex: 1000,
-  color: "white",
-  fontFamily: "monospace",
-};
-const containerStyle: React.CSSProperties = {
-  background: "#222",
-  padding: "15px",
-  borderRadius: "12px",
-  border: "1px solid #444",
-  boxShadow: "0 0 50px rgba(0,0,0,0.8)",
-};
-const headerStyle: React.CSSProperties = {
-  display: "flex",
-  gap: "10px",
-  marginBottom: "15px",
-};
-const btnStyle: React.CSSProperties = {
-  flex: 1,
-  padding: "10px",
-  cursor: "pointer",
-  border: "none",
-  borderRadius: "6px",
-  fontWeight: "bold",
-  background: "#444",
-  color: "#fff",
-  transition: "0.2s",
-};
-const infoStyle: React.CSSProperties = {
-  textAlign: "center",
-  fontSize: "24px",
-  color: "#0f0",
-  marginBottom: "15px",
-  fontWeight: "bold",
-};
-const canvasStyle: React.CSSProperties = {
-  background: "#000",
-  border: "4px solid #555",
-  display: "block",
-};
-const controlsStyle: React.CSSProperties = {
-  display: "flex",
-  justifyContent: "space-between",
-  gap: "10px",
-  marginTop: "15px",
-  padding: "15px",
-  background: "#333",
-  borderRadius: "8px",
-};
-const selectStyle: React.CSSProperties = {
-  padding: "5px",
-  background: "#555",
-  color: "white",
-  border: "1px solid #666",
-  borderRadius: "4px",
-  cursor: "pointer",
-};
-const modalOverlay: React.CSSProperties = {
-  position: "absolute",
-  inset: 0,
-  background: "rgba(0,0,0,0.85)",
-  display: "flex",
-  flexDirection: "column",
-  justifyContent: "center",
-  alignItems: "center",
-  borderRadius: "12px",
-};
-const restartBtnStyle: React.CSSProperties = {
-  background: "#28a745",
-  color: "white",
-  padding: "15px 40px",
-  fontSize: "20px",
-  border: "none",
-  borderRadius: "50px",
-  cursor: "pointer",
-  marginTop: "20px",
-  fontWeight: "bold",
-  textTransform: "uppercase",
-};
