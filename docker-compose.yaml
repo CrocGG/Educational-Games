@@ -1,0 +1,73 @@
+version: '3.8'
+name: golan-game-hub
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: postgres_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=myproj_db
+      - POSTGRES_USER=myuser
+      - POSTGRES_PASSWORD=supersecretpassword
+    healthcheck:
+      # FIX: Use pg_isready to check DB status locally, not curl
+      test: ["CMD-SHELL", "pg_isready -U myuser -d myproj_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app_network
+
+  backend:
+    build: ./backend
+    container_name: django_prod
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    environment:
+      - DEBUG=False
+      - SECRET_KEY=your-very-secret-key
+      - DB_ENGINE=django.db.backends.postgresql
+      - DB_NAME=myproj_db
+      - DB_USER=myuser
+      - DB_PASSWORD=supersecretpassword
+      - DB_HOST=db
+      - DB_PORT=5432
+    healthcheck:
+      # FIX: Check /admin/login/ which is guaranteed to exist by django.contrib.admin
+      # (If you prefer /api/health/, ensure you add it to urls.py)
+      test: ["CMD", "curl", "-f", "http://localhost:8000/admin/login/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - app_network
+
+  frontend:
+    build: ./frontend
+    container_name: nginx_prod
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    volumes:
+      - static_volume:/app/static
+      - media_volume:/app/media
+    networks:
+      - app_network
+
+volumes:
+  static_volume:
+  media_volume:
+  postgres_data:
+
+networks:
+  app_network:
+    driver: bridge

@@ -1,0 +1,21 @@
+FROM python:3.13-slim
+
+WORKDIR /app
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+RUN apt-get update && apt-get install -y gcc libpq-dev curl dos2unix && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --upgrade pip
+
+COPY requirements.txt .
+RUN pip install gunicorn && pip install -r requirements.txt
+
+COPY . .
+COPY entrypoint.sh .
+
+RUN dos2unix entrypoint.sh && chmod +x entrypoint.sh
+
+ENTRYPOINT ["/app/entrypoint.sh"]
+
+CMD ["gunicorn", "myproj.wsgi:application", "--bind", "0.0.0.0:8000"]

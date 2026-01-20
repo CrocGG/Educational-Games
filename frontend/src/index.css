@@ -1,0 +1,260 @@
+:root {
+  /* --- Color Palette --- */
+  --primary-bg: #f0f7ff;       /* Lightest Blue */
+  --card-bg: #ffffff;          /* White */
+  --accent-soft: #a8d8ea;      /* Soft Blue */
+  --accent-playful: #aa96da;   /* Soft Purple */
+  --accent-success: #95e1d3;   /* Mint Green */
+  
+  /* --- Typography & Text --- */
+  --text-main: #4a4a4a;
+  --text-muted: #7d7d7d;
+  --font-main: 'Comic Sans MS', 'Chalkboard SE', 'Segoe UI', cursive, sans-serif;
+  
+  /* --- UI Elements --- */
+  --border-radius: 20px;
+  --shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
+  --shadow-hover: 0 12px 24px rgba(0, 0, 0, 0.1);
+}
+
+body {
+  margin: 0;
+  background-color: var(--primary-bg);
+  color: var(--text-main);
+  font-family: var(--font-main);
+}
+
+/* --- Navbar --- */
+nav {
+  background-color: white;
+  padding: 1rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  flex-wrap: wrap; /* Prevents layout break on mobile */
+  box-shadow: var(--shadow);
+  border-bottom: 4px solid var(--accent-soft);
+}
+
+nav a {
+  text-decoration: none;
+  color: var(--text-main);
+  font-weight: bold;
+  font-size: 1.1rem;
+  transition: transform 0.2s, color 0.2s;
+}
+
+nav a:hover {
+  color: var(--accent-playful);
+  transform: scale(1.1);
+}
+
+/* --- Global Layout --- */
+.container {
+  max-width: 1000px;
+  margin: 40px auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+h1, h2, h3 {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+/* --- Forms (Login/Register) --- */
+.form-card {
+  background: var(--card-bg);
+  padding: 2rem;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+}
+
+input {
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  box-sizing: border-box; /* Critical for padding calculation */
+  outline: none;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+input:focus {
+  border-color: var(--accent-soft);
+}
+
+.error-message {
+  color: #ff6b6b;
+  font-size: 0.9rem;
+  margin-top: 5px;
+}
+
+/* --- Buttons (Primary Actions) --- */
+button {
+  background-color: orchid;
+  color: darkred;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 50px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 0 #8e7cc3; /* 3D effect */
+  margin-top: 10px;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  background-color: #967bb6;
+}
+
+button:active {
+  transform: translateY(2px);
+  box-shadow: none; /* Press effect */
+}
+
+/* --- Game Grid Layout --- */
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 300px)); 
+  gap: 30px;
+  padding: 20px 0;
+  width: 100%;
+  justify-content: center;
+}
+
+/* --- Game Card Component --- */
+.game-card {
+  background: var(--card-bg);
+  border-radius: var(--border-radius);
+  overflow: hidden; 
+  box-shadow: var(--shadow);
+  text-align: center;
+  border: 4px solid white;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s;
+}
+
+.game-card:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-hover);
+  border-color: var(--accent-soft);
+}
+
+/* --- Image Button (The Centering Fix) --- */
+.image-button {
+  width: 100%;
+  height: 200px; /* Fixed height frame */
+  background-color: #f9f9f9;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  cursor: pointer;
+  
+  /* Flexbox Perfect Centering */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  
+  /* Resetting inherited button styles */
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  transform: none !important;
+  outline: none;
+  overflow: hidden;
+}
+
+.image-button img {
+  max-width: 90%;
+  max-height: 90%;
+  width: auto;
+  height: auto;
+  object-fit: contain; 
+  display: block;
+  margin: 0 auto; /* Extra safety for centering */
+  transition: transform 0.4s ease; /* Smooth zoom on hover */
+}
+
+/* Zoom effect on image when card is hovered */
+.game-card:hover .image-button img {
+  transform: scale(1.05);
+}
+
+/* --- Game Info Section --- */
+.game-info {
+  padding: 15px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.game-info h3 {
+  margin: 5px 0 10px;
+  font-size: 1.25rem;
+  color: var(--text-main);
+}
+
+.high-score-badge {
+  background: var(--accent-soft);
+  color: #fff;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.1);
+  display: inline-block;
+  padding: 6px 15px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  margin: 0 auto;
+}
+
+/* --- Manager Table --- */
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto; /* Scrollable on small screens */
+  border-radius: 15px;
+}
+
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 8px; 
+}
+
+th {
+  color: var(--text-muted);
+  text-align: left;
+  padding: 10px 20px;
+  font-weight: 600;
+}
+
+tr.table-row {
+  background: white;
+  transition: transform 0.2s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+tr.table-row:hover {
+  transform: scale(1.01);
+}
+
+td {
+  padding: 15px 20px;
+  vertical-align: middle;
+}
+
+/* Rounded corners for table rows */
+td:first-child { border-radius: 15px 0 0 15px; }
+td:last-child { border-radius: 0 15px 15px 0; }
