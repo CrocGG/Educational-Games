@@ -47,7 +47,17 @@ The project features a secure user authentication system, a centralized database
 
 ---
 
-### **Method 1: Manual Execution (Development)**
+### **Method 1: Docker Deployment (Recommended)**
+
+If you have Docker Desktop running, you can launch the entire ecosystem with a single command:
+
+```bash
+docker-compose up -d --build
+```
+
+---
+
+### **Method 2: Manual Execution**
 
 Follow these steps to launch the backend, frontend, and GUI components separately.
 
@@ -78,15 +88,6 @@ python "[name_of_game].py"
 
 ---
 
-### **Method 2: Docker Deployment (Recommended)**
-
-If you have Docker Desktop running, you can launch the entire ecosystem with a single command:
-
-```bash
-docker-compose up -d --build
-```
-
----
 
 > [!NOTE]
 > **Compatibility Tip:** This project is optimized for **Python 3.13**. If you encounter issues with newer versions, ensure your virtual environment is explicitly using 3.13.
