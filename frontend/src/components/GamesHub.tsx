@@ -219,7 +219,7 @@ export default function GamesHub() {
   return (
     <div className="container" style={{ padding: "20px" }}>
       <h1 style={{ textAlign: "center", marginBottom: "30px" }}>
-        Educational Games
+        Golan's Educational Game Hub
       </h1>
       <div
         className="game-grid"
