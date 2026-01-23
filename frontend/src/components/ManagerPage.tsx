@@ -1,6 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// ManagerPage.tsx
-
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/rules-of-hooks */
 import { useEffect, useState } from "react";
@@ -68,13 +66,10 @@ export default function ManagerPage() {
     const formData = new FormData();
     formData.append("name", data.name);
 
-    // Only append the image if a new one was actually selected
     if (data.image && data.image.length > 0) {
       formData.append("image", data.image[0]);
     }
 
-    // Config to ensure the browser handles the FormData boundary correctly
-    // or to force the library to recognize this as a file upload.
     const config = {
       headers: {
         "Content-Type": "multipart/form-data",
@@ -83,26 +78,53 @@ export default function ManagerPage() {
 
     try {
       if (editingGame) {
-        // Use PATCH for updates (partial update)
         await api.patch(`/games/${editingGame.id}/`, formData, config);
       } else {
-        // Use POST for creation
         await api.post("/games/", formData, config);
       }
-      
-      // Cleanup on success
+
       setEditingGame(null);
       reset();
       fetchGames();
     } catch (error: any) {
       console.error(error);
-      // More descriptive error handling
       if (error.response?.data?.name) {
         alert("Operation failed: Game name already exists.");
       } else {
         alert("Operation failed. Please check the console for details.");
       }
     }
+  };
+
+  const handleDownloadCSV = () => {
+    // 1. Define Headers
+    const headers = ["ID", "Game Name", "High Score Player", "Top Player ID", "Image URL"];
+
+    // 2. Map data to rows (handling nulls and wrapping in quotes to prevent CSV breaks)
+    const rows = games.map((game) => [
+      game.id,
+      `"${game.name}"`,
+      `"${game.high_score_player_username || "No records"}"`,
+      game.high_score_player || "-",
+      game.image || "No Image",
+    ]);
+
+    // 3. Combine headers and rows
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) => row.join(",")),
+    ].join("\n");
+
+    // 4. Create a Blob and trigger download
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `games_export_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -119,6 +141,24 @@ export default function ManagerPage() {
           padding: "15px",
         }}
       >
+
+        {/* --- CSV DOWNLOAD BUTTON --- */}
+        <div style={{ marginBottom: "10px", textAlign: "right" }}>
+          <button
+            onClick={handleDownloadCSV}
+            style={{
+              backgroundColor: "#28a745",
+              color: "white",
+              padding: "8px 15px",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+              fontWeight: "bold"
+            }}
+          >
+            Download CSV
+          </button>
+        </div>
         <h3>{editingGame ? `Edit: ${editingGame.name}` : "Add New Game"}</h3>
 
         <form
@@ -132,7 +172,7 @@ export default function ManagerPage() {
           />
           {/* File input */}
           <input type="file" accept="image/*" {...register("image")} />
-          
+
           <button type="submit">{editingGame ? "Update" : "Create"}</button>
 
           {editingGame && (
