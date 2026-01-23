@@ -73,10 +73,10 @@ export default function CaterpillarGame({
 }: CaterpillarGameProps) {
   // --- STATE ---
   const [leavesLeft, setLeavesLeft] = useState(10);
-  
+
   // FIX: Start current session score at 0, not the high score
-  const [butterfliesFreed, setButterfliesFreed] = useState(0); 
-  
+  const [butterfliesFreed, setButterfliesFreed] = useState(0);
+
   const [gamePhase, setGamePhase] = useState<GamePhase>("feeding");
   const [message, setMessage] = useState("Help the caterpillar eat breakfast!");
 
@@ -341,9 +341,9 @@ export default function CaterpillarGame({
   // Cleanup animation on unmount
   useEffect(() => {
     return () => {
-        if (animationRef.current) {
-            cancelAnimationFrame(animationRef.current);
-        }
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
     }
   }, []);
 
@@ -387,7 +387,7 @@ export default function CaterpillarGame({
         </h2>
         {/* Shows Database High Score */}
         <small style={{ color: "#DCEDC8", fontSize: "14px" }}>
-            World Record: {currentHighScore > butterfliesFreed ? currentHighScore : butterfliesFreed}
+          World Record: {currentHighScore > butterfliesFreed ? currentHighScore : butterfliesFreed}
         </small>
       </div>
 
@@ -426,7 +426,7 @@ export default function CaterpillarGame({
         </button>
         <button
           onClick={() => feedCaterpillar(2)}
-          disabled={gamePhase !== "feeding"}
+          disabled={gamePhase !== "feeding" || leavesLeft < 2}
           style={{
             backgroundColor: "#33691E",
             color: "white",
@@ -435,8 +435,8 @@ export default function CaterpillarGame({
             padding: "10px 20px",
             border: "5px solid #1B5E20",
             borderRadius: "5px",
-            cursor: gamePhase === "feeding" ? "pointer" : "not-allowed",
-            opacity: gamePhase === "feeding" ? 1 : 0.6,
+            cursor: (gamePhase !== "feeding" || leavesLeft < 2) ? "not-allowed" : "pointer",
+            opacity: (gamePhase !== "feeding" || leavesLeft < 2) ? 0.6 : 1,
           }}
         >
           Munch (2) 🍃
