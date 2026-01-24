@@ -6,7 +6,7 @@ interface PixelMathGameProps {
   gameName: string;
   currentHighScore: number;
   onClose: () => void;
-  onUpdateHighScore?: (score: number) => void; // Optional callback if you want to save to API
+  onUpdateHighScore?: (score: number) => void;
 }
 
 interface TileData {
@@ -22,7 +22,7 @@ interface TileData {
 
 interface PaletteItem {
   ans: number;
-  color: string; // css rgb string
+  color: string;
   char: string;
   visualRGB: number[];
 }
@@ -34,223 +34,279 @@ interface PatternData {
 
 // --- Constants & Config ---
 
-// RGB Helper
 const rgb = (r: number, g: number, b: number) => `rgb(${r}, ${g}, ${b})`;
 
 const COLORS: Record<string, number[]> = {
-  ".": [255, 255, 255],
-  R: [230, 50, 50],
-  G: [50, 180, 50],
-  B: [50, 100, 230],
-  Y: [255, 215, 0],
-  O: [255, 140, 0],
-  P: [147, 112, 219],
-  K: [40, 40, 40], // Softer Key/Black
-  S: [135, 206, 250],
-  N: [139, 69, 19],
-  L: [50, 205, 50],
-  A: [128, 128, 128],
+  ".": [255, 255, 255], // White (Empty)
+  R: [230, 50, 50],     // Red
+  G: [50, 180, 50],     // Green
+  B: [50, 100, 230],    // Blue
+  Y: [255, 215, 0],     // Yellow
+  O: [255, 140, 0],     // Orange
+  P: [147, 112, 219],   // Purple
+  K: [40, 40, 40],      // Black/Key
+  S: [135, 206, 250],   // Sky Blue
+  N: [139, 69, 19],     // Brown
+  L: [50, 205, 50],     // Lime
+  A: [128, 128, 128],   // Gray
 };
 
+// 12x12 PATTERNS
 const RAW_PATTERNS: PatternData[] = [
   {
     name: "Heart",
     data: [
-      "...............",
-      "...RR.....RR...",
-      ".RRRRR...RRRRR.",
-      "RRRRRRR.RRRRRRR",
-      "RRRRRRRRRRRRRRR",
-      "RRRRRRRRRRRRRRR",
-      ".RRRRRRRRRRRRR.",
-      "..RRRRRRRRRRR..",
-      "...RRRRRRRRR...",
-      "....RRRRRRR....",
-      ".....RRRRR.....",
-      "......RRR......",
-      ".......R.......",
-      "...............",
-      "...............",
+      "............",
+      "..RR....RR..",
+      ".RRRR..RRRR.",
+      "RRRRRRRRRRRR",
+      "RRRRRRRRRRRR",
+      ".RRRRRRRRRR.",
+      "..RRRRRRRR..",
+      "...RRRRRR...",
+      "....RRRR....",
+      ".....RR.....",
+      "............",
+      "............",
     ],
   },
   {
     name: "Sailboat",
     data: [
-      ".......K.......",
-      ".......K.......",
-      "......RK.......",
-      ".....RRK.......",
-      "....RRRK.......",
-      "...RRRRK...Y...",
-      "..RRRRRK.......",
-      ".RRRRRRK.......",
-      "KKKKKKKKKKKKKKK",
-      ".NNNNNNNNNNNNN.",
-      "..NNNNNNNNNNN..",
-      "SSSSSSSSSSSSSSS",
-      "SSSSSSSSSSSSSSS",
-      "SSSSSSSSSSSSSSS",
-      "SSSSSSSSSSSSSSS",
+      "......K.....",
+      ".....RK.....",
+      "....RRK.....",
+      "...RRRK..Y..",
+      "..RRRRK.....",
+      "KKKKKKKKKKKK",
+      ".NNNNNNNNNN.",
+      "..SSSSSSSS..",
+      "..SSSSSSSS..",
+      "..SSSSSSSS..",
+      "..SSSSSSSS..",
+      "............",
     ],
   },
   {
     name: "Space Invader",
     data: [
-      "...............",
-      ".....G.....G...",
-      "......G...G....",
-      ".....GGGGGGG...",
-      "....GG.GGG.GG..",
-      "...GGGGGGGGGGG.",
-      "...G.GGGGGGG.G.",
-      "...G.G.....G.G.",
-      "......GG.GG....",
-      "...............",
-      "...............",
-      "...P.......P...",
-      "....P.....P....",
-      "...PPPPPPPPP...",
-      "..P.P.....P.P..",
+      "............",
+      "...G.....G..",
+      "....G...G...",
+      "...GGGGGGG..",
+      "..GG.GGG.GG.",
+      ".GGGGGGGGGGG",
+      ".G.GGGGGGG.G",
+      ".G.G.....G.G",
+      "....GG.GG...",
+      "............",
+      "............",
+      "............",
     ],
   },
   {
     name: "Rubber Duck",
     data: [
-      "...............",
-      "......YYY......",
-      "....YYYYYY.....",
-      "...YYKYYOYY....",
-      "...YYYYOOO.....",
-      "....YYYYYY.....",
-      "..YYYYYYYY.....",
-      ".YYYYYYYYYYY...",
-      "YYYYYYYYYYYYY..",
-      "YYYYYYYYYYYYY..",
-      ".YYYYYYYYYYY...",
-      "..SSSSSSSSSS...",
-      ".SSSSSSSSSSSS..",
-      "SSSSSSSSSSSSSS.",
-      "SSSSSSSSSSSSSSS",
+      "............",
+      ".....YY.....",
+      "...YYYYY....",
+      "..YYKYYO....",
+      "..YYYYOO....",
+      "...YYYYY....",
+      ".YYYYYYYY...",
+      "YYYYYYYYYY..",
+      "YYYYYYYYYY..",
+      ".SSSSSSSS...",
+      "..SSSSSSSS..",
+      "............",
     ],
   },
   {
     name: "Mushroom",
     data: [
-      ".....KKKKK.....",
-      "...KKRRRRRKK...",
-      "..KRRRRRRRRRK..",
-      ".KRRRRRRRRRRRK.",
-      ".KRR..RRR..RRK.",
-      ".KRR..RRR..RRK.",
-      ".KRRRRRRRRRRRK.",
-      "..KRRRRRRRRRK..",
-      "...KKKKKKKKK...",
-      "....K.....K....",
-      "....K..K..K....",
-      "....K..K..K....",
-      "....K.....K....",
-      "....KKKKKKK....",
-      "...............",
+      "....RRRR....",
+      "..RRRRRRRR..",
+      ".RR..RR..RR.",
+      ".RRRRRRRRRR.",
+      "..RRRRRRRR..",
+      "....KKKK....",
+      "...K....K...",
+      "...K....K...",
+      "...KKKKKK...",
+      "............",
+      "............",
+      "............",
     ],
   },
   {
     name: "Sword",
     data: [
-      "..............A",
-      ".............A.",
-      "............A..",
-      "...........A...",
-      "..........A....",
-      ".........A.....",
-      "........A......",
-      ".......A.......",
-      "......A........",
-      ".....A.........",
-      "....AK.........",
-      "...B.K.........",
-      "..B..K.........",
-      ".B...K.........",
-      "B....K.........",
+      "..........A.",
+      ".........A..",
+      "........A...",
+      ".......A....",
+      "......A.....",
+      ".....A......",
+      "....AK......",
+      "...B.K......",
+      "..B..K......",
+      ".B...K......",
+      "B....K......",
+      "............",
     ],
   },
   {
     name: "Creeper Face",
     data: [
-      "LLLLLLLLLLLLLLL",
-      "LLLLLLLLLLLLLLL",
-      "LLLLLLLLLLLLLLL",
-      "LLLLKKKLLKKKLLL",
-      "LLLLKKKLLKKKLLL",
-      "LLLLKKKLLKKKLLL",
-      "LLLLLLLLLLLLLLL",
-      "LLLLLLKKKLLLLLL",
-      "LLLLLLKKKLLLLLL",
-      "LLLLKKKKKKKLLLL",
-      "LLLLKKKKKKKLLLL",
-      "LLLLKKKLLKKKLLL",
-      "LLLLKKKLLKKKLLL",
-      "LLLLLLLLLLLLLLL",
-      "LLLLLLLLLLLLLLL",
+      "LLLLLLLLLLLL",
+      "LLLLLLLLLLLL",
+      "LLLKKLLKKLLL",
+      "LLLKKLLKKLLL",
+      "LLLLLLLLLLLL",
+      "LLLLLKKLLLLL",
+      "LLLLKKKKLLLL",
+      "LLLLKKKKLLLL",
+      "LLLKKLLKKLLL",
+      "LLLLLLLLLLLL",
+      "LLLLLLLLLLLL",
+      "LLLLLLLLLLLL",
     ],
   },
   {
     name: "Butterfly",
     data: [
-      "S.............S",
-      "SP.....K.....PS",
-      "SPP....K....PPS",
-      "SPPP...K...PPPS",
-      "SSPPPP.K.PPPPSS",
-      "SSSPPPPKPPPPSSS",
-      "SSSSPPPPPPPSSSS",
-      "SSSSSPPKPPSSSSS",
-      "SSSSPPPPPPPSSSS",
-      "SSSPPPPKPPPPSSS",
-      "SSPPPP.K.PPPPSS",
-      "SPPP...K...PPPS",
-      "SPP....K....PPS",
-      "SP.....K.....PS",
-      "S.............S",
+      "S..........S",
+      "SP...K...PPS",
+      "SPP..K..PPPS",
+      "SSPP.K.PPPSS",
+      "SSPPPKPPPSSS",
+      "SSSSPKPSSSSS",
+      "SSPPPKPPPSSS",
+      "SSPP.K.PPPSS",
+      "SPP..K..PPPS",
+      "SP...K...PPS",
+      "S..........S",
+      "S..........S",
     ],
   },
   {
     name: "Watermelon",
     data: [
-      "...............",
-      "...............",
-      "......RRR......",
-      "....RRKRKRR....",
-      "...RRRKRKRRR...",
-      "..RRRRRRRRRRR..",
-      "..RRRRRRRRRRR..",
-      ".RRRKRKRRRKRRR.",
-      ".RRRRRRRRRRRRR.",
-      ".LLLLLLLLLLLLL.",
-      "..LLLLLLLLLLL..",
-      "...GGGGGGGGG...",
-      "...............",
-      "...............",
-      "...............",
+      "............",
+      ".....R......",
+      "...RRKRR....",
+      "..RRKRKRR...",
+      ".RRRRRRRRR..",
+      ".RRKRKRRKR..",
+      ".RRRRRRRRR..",
+      "..LLLLLLL...",
+      "...GGGGG....",
+      "............",
+      "............",
+      "............",
     ],
   },
   {
     name: "Sunny House",
     data: [
-      "SSSSSSSSSSSSYYY",
-      "SSSSSSSSSSSSYYY",
-      "SSSSSSRSSSSSSSS",
-      "SSSSSSRRRSSSSSS",
-      "SSSSSRRRRRSSSSS",
-      "SSSSRRRRRRRSSSS",
-      "SSSRRRRRRRRRSSS",
-      "SSSRRRRRRRRRSSS",
-      "SSSOOOOOOOOOSSS",
-      "SSSOBBBOBBBOSSS",
-      "SSSOBBBOBBBOSSS",
-      "SSSOOOOOOOOOSSS",
-      "SSSOOOONNOOOSSS",
-      "GGGGGGGNNGGGGGG",
-      "GGGGGGGNNGGGGGG",
+      "SSSSSSSSSYYY",
+      "SSSSSSSSSYYY",
+      "SSSSRSSSSSSS",
+      "SSSRRRSSSSSS",
+      "SSRRRRRSSSSS",
+      "SRRRRRRRSSSS",
+      "SRRRRRRRSSSS",
+      "SOOOOOOOOSSS",
+      "SOBBBOBBOSSS",
+      "SOBBBOBBOSSS",
+      "SOOOONOOOSSS",
+      "GGGGNGGGGGGG",
+    ],
+  },
+  // --- NEW PATTERNS ---
+  {
+    name: "Pizza Slice",
+    data: [
+      "............",
+      ".....NN.....",
+      "....NYYN....",
+      "...NYRYYN...",
+      "..NYYRYYYN..",
+      ".NYYYYRYYYN.",
+      "NYYRYYYYYRYN",
+      ".NNNNNNNNNN.",
+      "............",
+      "............",
+      "............",
+      "............",
+    ],
+  },
+  {
+    name: "Smiley Face",
+    data: [
+      "....YYYY....",
+      "..YYYYYYYY..",
+      ".YYYYYYYYYY.",
+      ".YYKYYYYKYY.",
+      ".YYKYYYYKYY.",
+      "YYYYYYYYYYYY",
+      "YYYYKYYKYYYY",
+      ".YYYKYYKYYY.",
+      ".YYYYKKYYYY.",
+      "..YYYYYYYY..",
+      "....YYYY....",
+      "............",
+    ],
+  },
+  {
+    name: "Tree",
+    data: [
+      ".....G......",
+      "....GGG.....",
+      "...GGGGG....",
+      "..GGGGGGG...",
+      ".GGGGGGGGG..",
+      "GGGGGGGGGGGG",
+      "....NNN.....",
+      "....NNN.....",
+      "....NNN.....",
+      "GGGGNNNGGGGG",
+      "GGGGGGGGGGGG",
+      "GGGGGGGGGGGG",
+    ],
+  },
+  {
+    name: "Clown Fish",
+    data: [
+      "............",
+      "............",
+      "......OO....",
+      "...OOOWOO...",
+      "..OOWOOOWO..",
+      ".KOWOOOWOOK.",
+      ".KOWOOOWOOK.",
+      "..OOWOOOWO..",
+      "...OOOWOO...",
+      "......OO....",
+      "............",
+      "............",
+    ],
+  },
+  {
+    name: "Crewmate",
+    data: [
+      "............",
+      "...RRRR.....",
+      "..RRRRRR....",
+      ".RRSSSRR....",
+      ".RRSSSRR....",
+      ".RRRRRRR....",
+      ".RRRRRRR....",
+      ".RRRRRRR.R..",
+      ".RRRRRRRRR..",
+      ".RR...RR....",
+      ".RR...RR....",
+      "............",
     ],
   },
 ];
@@ -367,8 +423,9 @@ export default function PixelMathGame({
     setPalette(paletteList);
 
     const newTiles: TileData[] = [];
-    const rows = 15;
-    const cols = 15;
+    // CHANGED: 12x12 Grid
+    const rows = 12;
+    const cols = 12;
 
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
@@ -418,7 +475,7 @@ export default function PixelMathGame({
 
       if (newScore > highScore) {
         setHighScore(newScore);
-        if (onUpdateHighScore) onUpdateHighScore(newScore); // <--- Triggers API call
+        if (onUpdateHighScore) onUpdateHighScore(newScore);
       }
 
       // Check Win
@@ -456,7 +513,7 @@ export default function PixelMathGame({
         style={{
           display: "flex",
           gap: "30px",
-          maxWidth: "1200px",
+          maxWidth: "1100px", // Reduced width slightly
           width: "100%",
         }}
       >
@@ -465,18 +522,18 @@ export default function PixelMathGame({
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: `repeat(15, 1fr)`,
+              // CHANGED: 12 Columns
+              gridTemplateColumns: `repeat(12, 1fr)`,
               gap: "2px",
               backgroundColor: "rgb(255, 255, 255)",
               padding: "10px",
               border: "2px solid rgb(50, 50, 50)",
               borderRadius: "8px",
               boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
-              aspectRatio: "1/1", // Force square grid
+              aspectRatio: "1/1",
             }}
           >
             {tiles.map((tile, i) => {
-              // Hover and visual logic for tiles
               const darkerBorder = `rgb(${Math.max(
                 0,
                 tile.visualRGB[0] - 30
@@ -501,7 +558,8 @@ export default function PixelMathGame({
                     alignItems: "center",
                     justifyContent: "center",
                     cursor: tile.isPainted ? "default" : "pointer",
-                    fontSize: "0.7rem",
+                    // CHANGED: Slightly larger font since tiles are bigger
+                    fontSize: "0.85rem",
                     fontWeight: "bold",
                     color: tile.isPainted ? "transparent" : "rgb(50, 50, 50)",
                     userSelect: "none",
@@ -721,7 +779,7 @@ export default function PixelMathGame({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            pointerEvents: "none", // Allow clicking through to New Game button
+            pointerEvents: "none",
           }}
         >
           <div style={{ position: "relative" }}>
