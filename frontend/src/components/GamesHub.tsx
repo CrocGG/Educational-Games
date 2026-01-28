@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom"; 
+import { useParams, useNavigate } from "react-router-dom";
 import api, { API_URL } from "../services/api";
 import type { Game } from "../models/types";
 import SnakeGame from "../games/SnakeGame";
@@ -7,13 +7,14 @@ import PixelMathGame from "../games/Pencil";
 import BalloonGame from "../games/Balloon";
 import CaterpillarGame from "../games/Caterpillar";
 import CrawlerGame from "../games/Crawler";
-import BlackjackGame from "../games/Blackjack"; 
-import MoleGame from "../games/Mole"; 
+import BlackjackGame from "../games/Blackjack";
+import MoleGame from "../games/Mole";
+import KangarooGame from "../games/Kangaroo";
 
 export default function GamesHub() {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  
+
   // 1. Get the gameName from the URL (if it exists)
   const { gameName } = useParams();
   const navigate = useNavigate();
@@ -198,6 +199,19 @@ export default function GamesHub() {
     if (activeGame.name === "Whack-A-Mole") {
       return (
         <MoleGame
+          gameName={activeGame.name}
+          currentHighScore={activeGame.high_score ?? 0}
+          onClose={handleCloseGame}
+          onUpdateHighScore={(newScore: number) =>
+            handleSubmitScore(activeGame.name, newScore)
+          }
+        />
+      );
+    }
+
+    if (activeGame.name === "Kan-Ga-Roo") { 
+      return (
+        <KangarooGame
           gameName={activeGame.name}
           currentHighScore={activeGame.high_score ?? 0}
           onClose={handleCloseGame}
