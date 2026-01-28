@@ -470,4 +470,4 @@ if __name__ == "__main__":
     root.geometry('%dx%d+%d+%d' % (w_total, HEIGHT, x, y))
     
     game = KangarooGame(root)
-    root.mainloop() I have this game, I also want to add a high score mechanism (for each correct answer - 1 point, max 10)
+    root.mainloop() I have this game, I also want to add a high score mechanism (for each correct answer - 1 point, max 10 -  OR the number of correct answers)
