@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useRef, useState } from 'react';
+import kangarooSprite from "../assets/pics/kangaroo.png"
 
 // ==========================================
 // TYPES
@@ -55,13 +56,6 @@ interface Player {
   canMove: boolean;
 }
 
-// ==========================================
-// ASSETS (Base64 Encoded to ensure it loads)
-// ==========================================
-// This is the kangaroo image you provided, embedded directly so it never fails.
-const KANGAROO_BASE64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAMAAABHPGVmAAAAYFBMVEUAAAD///9JSUkpKSn/AAD/TEz/Skr/S0v/TU3/T0//QUH/Q0P/RUX/R0f/QE/////t7e3MzMzExMTq6urh4eHW1tbKysrBwcG9vb2zs7Ojo6OcnJyTk5NxcXFhYWFSUlI6l23VAAAAIHRSTlMAGf/v742NjWxsbGxMTEwqKiopKRkZGRkZGRkZGRkZGRl9k+5eAAADfUlEQVRogc2aa5uqMAyE2w+tFyx6qFZbvP//x3ZCDeiFUpTn/T5255lMJpM04XQ6f4t/oV+hX6FfoV+hX6FfoV+hX6FfoV+hX6FfoV+hX6Ffof8/QofD4XQ6n/SH0Wq1Wv1stH6/3+v1/mi04XB4PB7/aDQejy+Xy5+NBoP3+32z2fzRaLVarVardrv9s9FwOGw2m+12+0ejwWCz2Wy32/1+/2ejs9lsNpvdbvePRun1er3dbrfb/aPR2Ww2m812u/2j0dlsNpvNdrt9o9Fut9vtdr/f/9Ho5XJZLpf7/f6PRmfT6XS63W7faDQej8fjcavV+tHoZDKZTCar1eqNRsPhcDidTqfT6Y1G/X6/3+/3er0fjQ6Hw+FwOBwO/2g0Ho/H4/F4PP7RaDAYDAaDwWDwj0b9fr/f7/f7/R+NBoPBYDAYDAaDNxqNRqPRaDQajR+NBoPBYDAYDAb/aDQajUaj0Wg0+kej/X6/3+/3+/0fjQ6Hw+FwOBwO/2g0Ho/H4/F4PP7RaDAYDAaDwWDwj0b9fr/f7/f7/R+N+v1+v9/v9/s/Gg0Gg8FgMBgM/tFotVqtVqvVavWPRqPRaDQajUajNxqNRqPRaDQajR+NBoPBYDAYDAb/aJQ+yWw22+32j0Zns9lsNtvt9o1Gu91ut9v9fv9Ho5fLZblc7vf7PxqdTafT6Xa7faPReDwej8etVutHo5PJZDKZrFarNxoNh8PhcDqdTqczg343Go1G4/f7/X6/f6O/2Gw2m81ut/tHo7PZbDab7Xb7RqPdbvf7/X6//6PRy+VyvV6v1+s/Gp1Op9PpdDqdvtkI/y3+hX6FfoV+hX6FfoV+hX6FfoV+hX6FfoV+hX6FfoV+hf4bQk+n0+l0/oJov9/v9/tnox2Px+PxeDwe/2g0HA6Hw+FwOPyj0fl8Pp/P5/P5j0bD4XA4HA6Hwzcamc/n8/l8Pp//0Wg8Ho/H4/F4/KPR+Xw+n8/n8/kfjQ6Hw+FwOBwO/2g0HA6Hw+FwOPyj0fl8Pp/P5/P5j0bD4XA4HA6Hwzcamc/n8/l8Pp//0Wg8Ho/H4/F4/KPR+Xw+n8/n8/kfjQ6Hw+FwOBwO/2g0HA6Hw+FwOPyj0fl8Pp/P5/P5j0bD4XA4HA6Hwzcamc/n8/l8Pp//0Wg8Ho/H4/F4/KPR+Xw+n8/n8/kfjQ6Hw+FwOBwO/2g0HA6Hw+FwOPyj0fl8Pp/P5/P5j0b/AbtF6y/n5wXkAAAAAElFTkSuQmCC";
-
-// ==========================================
 // CONSTANTS
 // ==========================================
 const WIDTH = 800;
@@ -145,7 +139,7 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
   // 2. Load Image from Base64 (Fixes Image Loading)
   useEffect(() => {
     const img = new Image();
-    img.src = KANGAROO_BASE64;
+    img.src = kangarooSprite;
     img.onload = () => {
       setKangarooImg(img);
     };
