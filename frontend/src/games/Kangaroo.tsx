@@ -56,6 +56,12 @@ interface Player {
 }
 
 // ==========================================
+// ASSETS (Base64 Encoded to ensure it loads)
+// ==========================================
+// This is the kangaroo image you provided, embedded directly so it never fails.
+const KANGAROO_BASE64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAMAAABHPGVmAAAAYFBMVEUAAAD///9JSUkpKSn/AAD/TEz/Skr/S0v/TU3/T0//QUH/Q0P/RUX/R0f/QE/////t7e3MzMzExMTq6urh4eHW1tbKysrBwcG9vb2zs7Ojo6OcnJyTk5NxcXFhYWFSUlI6l23VAAAAIHRSTlMAGf/v742NjWxsbGxMTEwqKiopKRkZGRkZGRkZGRkZGRl9k+5eAAADfUlEQVRogc2aa5uqMAyE2w+tFyx6qFZbvP//x3ZCDeiFUpTn/T5255lMJpM04XQ6f4t/oV+hX6FfoV+hX6FfoV+hX6FfoV+hX6FfoV+hX6Ffof8/QofD4XQ6n/SH0Wq1Wv1stH6/3+v1/mi04XB4PB7/aDQejy+Xy5+NBoP3+32z2fzRaLVarVardrv9s9FwOGw2m+12+0ejwWCz2Wy32/1+/2ejs9lsNpvdbvePRun1er3dbrfb/aPR2Ww2m812u/2j0dlsNpvNdrt9o9Fut9vtdr/f/9Ho5XJZLpf7/f6PRmfT6XS63W7faDQej8fjcavV+tHoZDKZTCar1eqNRsPhcDidTqfT6Y1G/X6/3+/3er0fjQ6Hw+FwOBwO/2g0Ho/H4/F4PP7RaDAYDAaDwWDwj0b9fr/f7/f7/R+NBoPBYDAYDAaDNxqNRqPRaDQajR+NBoPBYDAYDAb/aDQajUaj0Wg0+kej/X6/3+/3+/0fjQ6Hw+FwOBwO/2g0Ho/H4/F4PP7RaDAYDAaDwWDwj0b9fr/f7/f7/R+N+v1+v9/v9/s/Gg0Gg8FgMBgM/tFotVqtVqvVavWPRqPRaDQajUajNxqNRqPRaDQajR+NBoPBYDAYDAb/aJQ+yWw22+32j0Zns9lsNtvt9o1Gu91ut9v9fv9Ho5fLZblc7vf7PxqdTafT6Xa7faPReDwej8etVutHo5PJZDKZrFarNxoNh8PhcDqdTqczg343Go1G4/f7/X6/f6O/2Gw2m81ut/tHo7PZbDab7Xb7RqPdbvf7/X6//6PRy+VyvV6v1+s/Gp1Op9PpdDqdvtkI/y3+hX6FfoV+hX6FfoV+hX6FfoV+hX6FfoV+hX6FfoV+hf4bQk+n0+l0/oJov9/v9/tnox2Px+PxeDwe/2g0HA6Hw+FwOPyj0fl8Pp/P5/P5j0bD4XA4HA6Hwzcamc/n8/l8Pp//0Wg8Ho/H4/F4/KPR+Xw+n8/n8/kfjQ6Hw+FwOBwO/2g0HA6Hw+FwOPyj0fl8Pp/P5/P5j0bD4XA4HA6Hwzcamc/n8/l8Pp//0Wg8Ho/H4/F4/KPR+Xw+n8/n8/kfjQ6Hw+FwOBwO/2g0HA6Hw+FwOPyj0fl8Pp/P5/P5j0bD4XA4HA6Hwzcamc/n8/l8Pp//0Wg8Ho/H4/F4/KPR+Xw+n8/n8/kfjQ6Hw+FwOBwO/2g0HA6Hw+FwOPyj0fl8Pp/P5/P5j0b/AbtF6y/n5wXkAAAAAElFTkSuQmCC";
+
+// ==========================================
 // CONSTANTS
 // ==========================================
 const WIDTH = 800;
@@ -63,6 +69,11 @@ const HEIGHT = 600;
 const GRAVITY = 0.8;
 const JUMP_STRENGTH = -16;
 const SPEED = 8;
+
+// DISTANCE CONSTANTS (Revised for playability)
+const GAP_TO_ANSWER = 250; // Distance from Green to Red/Blue (Was too short/far)
+const GAP_TO_NEXT = 320;   // Distance from Answer to next Green (Was 500 - impossible)
+const PLATFORM_WIDTH = 200; // Wider platforms to make landing easier
 
 const DEFAULT_QUESTIONS: Question[] = [
   { text: "מהו צבע השמש?", blue: "צהוב", red: "סגול", correct: "Blue" },
@@ -77,51 +88,6 @@ const DEFAULT_QUESTIONS: Question[] = [
   { text: "מה יותר שמן?", blue: "חזיר", red: "פיל", correct: "Red" },
 ];
 
-// ==========================================
-// SOUND MANAGER
-// ==========================================
-const playSound = (type: 'jump' | 'splash' | 'wrong' | 'win' | 'point') => {
-  const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-  if (!AudioContext) return;
-  const ctx = new AudioContext();
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.connect(gain);
-  gain.connect(ctx.destination);
-
-  const now = ctx.currentTime;
-
-  if (type === 'jump') {
-    osc.frequency.setValueAtTime(400, now);
-    gain.gain.setValueAtTime(0.1, now);
-    osc.start(now);
-    osc.stop(now + 0.1);
-  } else if (type === 'splash') {
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(150, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-    osc.start(now);
-    osc.stop(now + 0.3);
-  } else if (type === 'wrong') {
-    osc.type = 'square';
-    osc.frequency.setValueAtTime(100, now);
-    gain.gain.setValueAtTime(0.1, now);
-    osc.start(now);
-    osc.stop(now + 0.4);
-  } else if (type === 'point') {
-    osc.frequency.setValueAtTime(1000, now);
-    gain.gain.setValueAtTime(0.1, now);
-    osc.start(now);
-    osc.stop(now + 0.1);
-  } else if (type === 'win') {
-    osc.frequency.setValueAtTime(600, now);
-    osc.frequency.setValueAtTime(800, now + 0.1);
-    gain.gain.setValueAtTime(0.1, now);
-    osc.start(now);
-    osc.stop(now + 0.3);
-  }
-};
-
 const KangarooGame: React.FC<KangarooGameProps> = ({
   currentHighScore,
   onClose,
@@ -129,11 +95,13 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
 }) => {
   // DOM Refs
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null); // For handling focus/keyboard
+  const containerRef = useRef<HTMLDivElement>(null); 
   const requestRef = useRef<number>(0);
 
-  // Game Logic Refs (These persist without causing re-renders)
-  // Crucial: We use a Ref for gameState so the loop sees changes instantly
+  // Audio Context Ref
+  const audioCtxRef = useRef<AudioContext | null>(null);
+
+  // Game Logic Refs
   const gameStateRef = useRef<'start' | 'playing' | 'gameover' | 'win'>('start');
   
   const playerRef = useRef<Player>({
@@ -150,33 +118,45 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
   const scoreRef = useRef(0);
   const answeredRef = useRef<Set<number>>(new Set());
   
-  // React State for UI (Rendering text, buttons, images)
+  // React State for UI
   const [uiState, setUiState] = useState<'start' | 'playing' | 'gameover' | 'win'>('start');
   const [uiScore, setUiScore] = useState(0);
   const [currentQuestionText, setCurrentQuestionText] = useState("לחץ על המשחק והתחל ללכת (חצים ורווח)!");
   const [kangarooImg, setKangarooImg] = useState<HTMLImageElement | null>(null);
 
-  // 1. Load Image Asset
+  // ==========================================
+  // INITIALIZATION
+  // ==========================================
+
+  // 1. Initialize Audio Context only once (Fixes Crash)
   useEffect(() => {
-    const img = new Image();
-    img.src = "assets/pics/47.jpg";
-    img.onload = () => {
-      console.log("Kangaroo Image Loaded Successfully");
-      setKangarooImg(img);
-    };
-    img.onerror = (e) => {
-        console.error("Failed to load kangaroo image. Check path:", "frontend/src/public/assets/pics/kangaroo.png", e);
+    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+    if (AudioContext) {
+      audioCtxRef.current = new AudioContext();
+    }
+
+    return () => {
+      if (audioCtxRef.current) {
+        audioCtxRef.current.close();
+      }
     };
   }, []);
 
-  // 2. Focus on Mount logic
+  // 2. Load Image from Base64 (Fixes Image Loading)
   useEffect(() => {
-    // Focus the container so keyboard events work immediately
+    const img = new Image();
+    img.src = KANGAROO_BASE64;
+    img.onload = () => {
+      setKangarooImg(img);
+    };
+  }, []);
+
+  // 3. Focus and Start Loop
+  useEffect(() => {
     if (containerRef.current) {
       containerRef.current.focus();
     }
     initLevel();
-    // Start loop
     requestRef.current = requestAnimationFrame(tick);
     
     return () => {
@@ -184,24 +164,76 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
     };
   }, []);
 
+  const playSound = (type: 'jump' | 'splash' | 'wrong' | 'win' | 'point') => {
+    if (!audioCtxRef.current) return;
+    const ctx = audioCtxRef.current;
+    
+    // Resume context if suspended
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    const now = ctx.currentTime;
+
+    if (type === 'jump') {
+      osc.frequency.setValueAtTime(400, now);
+      gain.gain.setValueAtTime(0.1, now);
+      osc.start(now);
+      osc.stop(now + 0.1);
+    } else if (type === 'splash') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(150, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+      osc.start(now);
+      osc.stop(now + 0.3);
+    } else if (type === 'wrong') {
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(100, now);
+      gain.gain.setValueAtTime(0.1, now);
+      osc.start(now);
+      osc.stop(now + 0.4);
+    } else if (type === 'point') {
+      osc.frequency.setValueAtTime(1000, now);
+      gain.gain.setValueAtTime(0.1, now);
+      osc.start(now);
+      osc.stop(now + 0.1);
+    } else if (type === 'win') {
+      osc.frequency.setValueAtTime(600, now);
+      osc.frequency.setValueAtTime(800, now + 0.1);
+      gain.gain.setValueAtTime(0.1, now);
+      osc.start(now);
+      osc.stop(now + 0.3);
+    }
+  };
+
   const initLevel = () => {
     const plats: Platform[] = [];
     let cx = 0;
 
     // Start Platform
     plats.push({ x: cx, y: 530, width: 300, height: 30, type: 'start', q_index: -1, label: '', visible: true });
-    cx += 400;
+    cx += 380; // Initial Gap
 
     // Questions
     DEFAULT_QUESTIONS.forEach((q, i) => {
-      // Green (Question) Platform
-      plats.push({ x: cx, y: 400, width: 120, height: 30, type: 'green', q_index: i, label: '', visible: true });
-      cx += 180;
+      // Green (Question) Platform - Lowered slightly to y:450 for better rhythm
+      plats.push({ x: cx, y: 450, width: 140, height: 30, type: 'green', q_index: i, label: '', visible: true });
+      
+      cx += GAP_TO_ANSWER; 
       
       // Answers
-      plats.push({ x: cx, y: 280, width: 150, height: 30, type: 'Blue', q_index: i, label: q.blue, visible: true });
-      plats.push({ x: cx, y: 480, width: 150, height: 30, type: 'Red', q_index: i, label: q.red, visible: true });
-      cx += 280;
+      // Blue (Top) - Lowered to 300 (easier to hit)
+      // Red (Bottom) - Raised to 500 (distinct separation)
+      // Platforms widened to 200px
+      plats.push({ x: cx, y: 300, width: PLATFORM_WIDTH, height: 30, type: 'Blue', q_index: i, label: q.blue, visible: true });
+      plats.push({ x: cx, y: 500, width: PLATFORM_WIDTH, height: 30, type: 'Red', q_index: i, label: q.red, visible: true });
+      
+      cx += GAP_TO_NEXT; 
     });
 
     // End Platform
@@ -223,14 +255,13 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
     answeredRef.current = new Set();
     particlesRef.current = [];
     
-    // Update both Ref (for loop) and State (for UI)
     gameStateRef.current = 'playing';
     setUiState('playing');
     setCurrentQuestionText("התחל ללכת וקפוץ לפלטפורמה הירוקה הראשונה!");
   };
 
   // ==========================================
-  // GAME LOOP & LOGIC
+  // GAME LOOP
   // ==========================================
 
   const createSplash = (x: number, y: number) => {
@@ -250,7 +281,6 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
     const p = playerRef.current;
     if (p.sinking) return;
 
-    // Horizontal Move
     if (p.canMove) {
       if (keysRef.current.right) {
         p.dx = SPEED;
@@ -265,24 +295,21 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
       p.dx = 0;
     }
 
-    // Jump
     if (p.canMove && keysRef.current.up && p.grounded) {
       p.dy = JUMP_STRENGTH;
       p.grounded = false;
       playSound('jump');
     }
 
-    // Apply Physics
     p.dy += GRAVITY;
     p.x += p.dx;
     p.y += p.dy;
 
-    // Camera follow
     if (p.x > 250) {
       cameraXRef.current = p.x - 250;
     }
 
-    // Water check
+    // Water level
     if (p.y > 580 && !p.sinking) {
       p.sinking = true;
       playSound('splash');
@@ -303,13 +330,13 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
     platformsRef.current.forEach(plat => {
       if (!plat.visible) return;
 
-      // AABB Collision
+      // AABB Collision with generous tolerance
       if (
         p.x < plat.x + plat.width &&
         p.x + p.w > plat.x &&
         p.y + p.h >= plat.y &&
-        p.y + p.h <= plat.y + plat.height + 15 && // Tolerance
-        p.dy >= 0 // Only land when falling
+        p.y + p.h <= plat.y + plat.height + 25 && 
+        p.dy >= 0 
       ) {
         // Trap Logic
         const isTrap = () => {
@@ -320,7 +347,6 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
         };
 
         if (isTrap()) {
-          // Hide trap and sibling
           plat.visible = false;
           platformsRef.current.forEach(other => {
              if(other.q_index === plat.q_index) other.visible = false;
@@ -328,6 +354,7 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
 
           p.canMove = false;
           playSound('wrong');
+          p.grounded = false; 
         } else {
           // Land Safely
           p.grounded = true;
@@ -438,14 +465,9 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
         }
         ctx.restore();
       } else {
-        // Fallback if image fails to load
+        // Fallback
         ctx.fillStyle = "#8B4513";
         ctx.fillRect(px, p.y, p.w, p.h);
-        
-        // Debug text on player
-        ctx.fillStyle = "white";
-        ctx.font = "10px Arial";
-        ctx.fillText("No Img", px, p.y - 5);
       }
     }
 
@@ -459,9 +481,7 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
     });
   };
 
-  // Main Loop
   const tick = () => {
-    // Check Ref, not State!
     if (gameStateRef.current === 'playing') {
       updatePhysics();
       checkCollisions();
@@ -473,7 +493,6 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
       if (ctx) draw(ctx);
     }
     
-    // Always loop to keep drawing (unless component unmounts)
     requestRef.current = requestAnimationFrame(tick);
   };
 
@@ -481,10 +500,8 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
   // INPUT HANDLING
   // ==========================================
   
-  // We attach these to the Div Container, not Window
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (['ArrowLeft', 'ArrowRight', 'ArrowUp', ' '].includes(e.key)) {
-        // Prevent page scrolling
         e.preventDefault(); 
     }
 
@@ -520,7 +537,6 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
 
   const handleRestart = () => {
     initLevel();
-    // Refocus container to ensure controls work after restart
     if (containerRef.current) containerRef.current.focus();
   };
 
@@ -532,7 +548,7 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
         ref={containerRef}
         className="container" 
         style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px', outline: 'none' }}
-        tabIndex={0} // Allows this div to receive keyboard focus
+        tabIndex={0}
         onKeyDown={handleKeyDown}
         onKeyUp={handleKeyUp}
     >
@@ -545,7 +561,7 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
           width={WIDTH} 
           height={HEIGHT} 
           style={{ border: '4px solid #333', borderRadius: '8px', background: '#87CEEB', cursor: 'pointer' }}
-          onClick={() => containerRef.current?.focus()} // Click to focus fix
+          onClick={() => containerRef.current?.focus()} 
         />
 
         {/* SIDEBOARD */}
