@@ -159,7 +159,7 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
   // 1. Load Image Asset
   useEffect(() => {
     const img = new Image();
-    img.src = "assets/pics/kangaroo.png";
+    img.src = "assets/pics/47.jpg";
     img.onload = () => {
       console.log("Kangaroo Image Loaded Successfully");
       setKangarooImg(img);
