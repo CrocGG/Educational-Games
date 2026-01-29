@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import BeautifulAussie from "../assets/video/beautifulAussie.mp4";
-import BeautyBlonde from "../assets/pics/beautiful_aussie_girl.webp";
+import BeautifulAussie from "../public/assets/video/beautifulAussie.mp4";
+import BeautyBlonde from "../public/assets/pics/beautiful_aussie_girl.webp";
 
 export default function About() {
   const [isHovered, setIsHovered] = useState(false);

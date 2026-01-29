@@ -1,7 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useRef, useState } from 'react';
-// Ensure this path is 100% correct relative to this file
 
 // ==========================================
 // TYPES
@@ -160,13 +159,13 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
   // 1. Load Image Asset
   useEffect(() => {
     const img = new Image();
-    img.src = kangarooSprite;
+    img.src = "assets/pics/kangaroo.png";
     img.onload = () => {
       console.log("Kangaroo Image Loaded Successfully");
       setKangarooImg(img);
     };
     img.onerror = (e) => {
-        console.error("Failed to load kangaroo image. Check path:", kangarooSprite, e);
+        console.error("Failed to load kangaroo image. Check path:", "frontend/src/public/assets/pics/kangaroo.png", e);
     };
   }, []);
 
