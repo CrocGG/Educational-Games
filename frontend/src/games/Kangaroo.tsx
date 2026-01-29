@@ -205,7 +205,7 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
     });
 
     // End Platform
-    plats.push({ x: cx, y: 500, width: 800, height: 30, type: 'end', q_index: 99, label: 'FINISH', visible: true });
+    plats.push({ x: cx, y: 500, width: 800, height: 30, type: 'end', q_index: 99, label: '', visible: true });
 
     platformsRef.current = plats;
     
@@ -514,7 +514,7 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
     gameStateRef.current = 'win';
     setUiState('win');
     playSound('win');
-    setCurrentQuestionText("ניצחון! הגעת לאוסטרליה!");
+    setCurrentQuestionText("! הגעת לאוסטרליה!");
     onUpdateHighScore(scoreRef.current);
   };
 
@@ -608,8 +608,8 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
       {uiState === 'win' && (
         <div style={modalOverlayStyle}>
           <div style={modalContentStyle}>
-            <h2>ניצחון! 🏆</h2>
-            <p>הגעת לאוסטרליה!</p>
+            <h2>בשעה טובה נחתת באוסטרליה!</h2>
+            <p>עכשיו אפשר להשתזף בנחת!</p>
             <p>ניקוד סופי: {uiScore}</p>
             <div style={{display:'flex', gap:'10px', justifyContent:'center'}}>
               <button onClick={handleRestart} style={btnStyle}>שחק שוב</button>

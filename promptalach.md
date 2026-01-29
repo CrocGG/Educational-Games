@@ -1,512 +1,653 @@
-kangaroo.py
+kangaroo.tsx
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useEffect, useRef, useState } from 'react';
 
-import tkinter as tk
-from tkinter import messagebox
-import csv
-import math
-import time
-import random
-import os
-import platform
+// ==========================================
+// TYPES
+// ==========================================
+interface KangarooGameProps {
+  gameName: string;
+  currentHighScore: number;
+  onClose: () => void;
+  onUpdateHighScore: (score: number) => void;
+}
 
-# ==========================================
-# IMAGE LIBRARY IMPORT (SAFE MODE)
-# ==========================================
-# We try to import PIL (Pillow) to handle image flipping.
-# If the user doesn't have it installed, we fall back to standard Tkinter (no flip).
-HAS_PIL = False
-try:
-    from PIL import Image, ImageTk, ImageOps
-    HAS_PIL = True
-except ImportError:
-    print("NOTE: Install 'pillow' library to enable image flipping! (pip install pillow)")
+interface Question {
+  text: string;
+  blue: string;
+  red: string;
+  correct: 'Blue' | 'Red';
+}
 
-def fix_rtl(text):
-    if not text: return ""
-    # Adds the RTL mark to every line to force punctuation to the left (the end)
-    return "\n".join([str(line) + "\u200f" for line in text.split("\n")])
+type PlatformType = 'start' | 'end' | 'green' | 'Blue' | 'Red';
 
-# ==========================================
-# CONFIGURATION
-# ==========================================
-WIDTH = 800
-HEIGHT = 600
-GRAVITY = 0.8
-JUMP_STRENGTH = -16
-SPEED = 8
-FRAME_RATE = 16
-HIGH_SCORE_FILE = "highscore.txt"
+interface Platform {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  type: PlatformType;
+  q_index: number;
+  label: string;
+  visible: boolean;
+}
 
-# ==========================================
-# SOUND MANAGER
-# ==========================================
-system_platform = platform.system()
+interface Particle {
+  x: number;
+  y: number;
+  dx: number;
+  dy: number;
+  radius: number;
+  life: number;
+  decay: number;
+}
 
-def play_sound(sound_type):
-    try:
-        if system_platform == "Windows":
-            import winsound
-            if sound_type == 'jump':
-                winsound.Beep(400, 100)
-            elif sound_type == 'splash':
-                winsound.Beep(150, 300)
-            elif sound_type == 'wrong':
-                winsound.Beep(100, 400)
-            elif sound_type == 'win':
-                winsound.Beep(600, 100)
-                time.sleep(0.1)
-                winsound.Beep(800, 200)
-            elif sound_type == 'point':
-                winsound.Beep(1000, 100)
-        else:
-            pass 
-    except Exception:
-        pass
+interface Player {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  dx: number;
+  dy: number;
+  grounded: boolean;
+  facingRight: boolean;
+  sinking: boolean;
+  canMove: boolean;
+}
 
-# ==========================================
-# CSV PARSER
-# ==========================================
-def load_questions():
-    questions = []
-    try:
-        with open('questions.csv', 'r', encoding='utf-8') as f:
-            reader = csv.reader(f)
-            next(reader) 
-            for row in reader:
-                if len(row) >= 5:
-                    questions.append({
-                        "text": row[1],
-                        "blue": row[2],
-                        "red": row[3],
-                        "correct": row[4].strip()
-                    })
-    except FileNotFoundError:
-        print("CSV not found, using default backup questions.")
-        questions = [
-            {"text": "מהו צבע השמש?", "blue": "צהוב", "red": "סגול", "correct": "Blue"},
-            {"text": "חצי מ-30?", "blue": "15", "red": "20", "correct": "Blue"},
-            {"text": "מה צפוני יותר?", "blue": "צפת", "red": "אילת", "correct": "Blue"},
-        ]
-    return questions
+// ==========================================
+// CONSTANTS
+// ==========================================
+const WIDTH = 800;
+const HEIGHT = 600;
+const GRAVITY = 0.8;
+const JUMP_STRENGTH = -16;
+const SPEED = 8;
 
-# ==========================================
-# GAME CLASSES
-# ==========================================
+const DEFAULT_QUESTIONS: Question[] = [
+  { text: "מהו צבע השמש?", blue: "צהוב", red: "סגול", correct: "Blue" },
+  { text: "חצי מ-30?", blue: "15", red: "20", correct: "Blue" },
+  { text: "מה צפוני יותר?", blue: "צפת", red: "אילת", correct: "Blue" },
+  { text: "5:3?", blue: "1.333", red: "1.666", correct: "Red" },
+  { text: "מה יותר כבד?", blue: "קילו נוצות", red: "חצי קילו נפט", correct: "Blue" },
+  { text: "איפה נמצאת ירושלים?", blue: "במערב", red: "במזרח", correct: "Red" },
+  { text: "90*3?", blue: "270", red: "300", correct: "Blue" },
+  { text: "מי המציא את הנורה?", blue: "גלילאו", red: "אדיסון", correct: "Red" },
+  { text: "השלם: \"שלום ___\"", blue: "חייזר", red: "חבר", correct: "Red" },
+  { text: "מה יותר שמן?", blue: "חזיר", red: "פיל", correct: "Red" },
+];
 
-class Particle:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-        self.dx = (random.random() - 0.5) * 8
-        self.dy = random.random() * -10 - 5
-        self.radius = random.random() * 4 + 2
-        self.life = 1.0
-        self.decay = random.random() * 0.02 + 0.01
+// ==========================================
+// SOUND MANAGER
+// ==========================================
+const playSound = (type: 'jump' | 'splash' | 'wrong' | 'win' | 'point') => {
+  const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+  if (!AudioContext) return;
+  const ctx = new AudioContext();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain);
+  gain.connect(ctx.destination);
 
-    def update(self):
-        self.x += self.dx
-        self.dy += 0.4
-        self.y += self.dy
-        self.life -= self.decay
+  const now = ctx.currentTime;
 
-class Platform:
-    def __init__(self, x, y, width, p_type, q_index, label=""):
-        self.x = x
-        self.y = y
-        self.width = width
-        self.height = 30
-        self.type = p_type
-        self.q_index = q_index
-        self.label = label
-        self.visible = True
+  if (type === 'jump') {
+    osc.frequency.setValueAtTime(400, now);
+    gain.gain.setValueAtTime(0.1, now);
+    osc.start(now);
+    osc.stop(now + 0.1);
+  } else if (type === 'splash') {
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(150, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+    osc.start(now);
+    osc.stop(now + 0.3);
+  } else if (type === 'wrong') {
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(100, now);
+    gain.gain.setValueAtTime(0.1, now);
+    osc.start(now);
+    osc.stop(now + 0.4);
+  } else if (type === 'point') {
+    osc.frequency.setValueAtTime(1000, now);
+    gain.gain.setValueAtTime(0.1, now);
+    osc.start(now);
+    osc.stop(now + 0.1);
+  } else if (type === 'win') {
+    osc.frequency.setValueAtTime(600, now);
+    osc.frequency.setValueAtTime(800, now + 0.1);
+    gain.gain.setValueAtTime(0.1, now);
+    osc.start(now);
+    osc.stop(now + 0.3);
+  }
+};
 
-class KangarooGame:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("קנגורו - מאת גולן גלנט")
-        self.root.resizable(False, False)
-        
-        # --- Layout Setup ---
-        self.main_frame = tk.Frame(root, bg="#2c3e50")
-        self.main_frame.pack(fill=tk.BOTH, expand=True)
+const KangarooGame: React.FC<KangarooGameProps> = ({
+  currentHighScore,
+  onClose,
+  onUpdateHighScore,
+}) => {
+  // DOM Refs
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null); // For handling focus/keyboard
+  const requestRef = useRef<number>(0);
 
-        # Sideboard
-        self.sideboard = tk.Frame(self.main_frame, width=250, bg="#333", bd=4, relief="solid")
-        self.sideboard.pack(side=tk.RIGHT, fill=tk.Y)
-        self.sideboard.pack_propagate(False)
+  // Game Logic Refs (These persist without causing re-renders)
+  // Crucial: We use a Ref for gameState so the loop sees changes instantly
+  const gameStateRef = useRef<'start' | 'playing' | 'gameover' | 'win'>('start');
+  
+  const playerRef = useRef<Player>({
+    x: 50, y: 470, w: 60, h: 60,
+    dx: 0, dy: 0,
+    grounded: false, facingRight: true,
+    sinking: false, canMove: true
+  });
+  
+  const cameraXRef = useRef(0);
+  const platformsRef = useRef<Platform[]>([]);
+  const particlesRef = useRef<Particle[]>([]);
+  const keysRef = useRef<{ [key: string]: boolean }>({ left: false, right: false, up: false });
+  const scoreRef = useRef(0);
+  const answeredRef = useRef<Set<number>>(new Set());
+  
+  // React State for UI (Rendering text, buttons, images)
+  const [uiState, setUiState] = useState<'start' | 'playing' | 'gameover' | 'win'>('start');
+  const [uiScore, setUiScore] = useState(0);
+  const [currentQuestionText, setCurrentQuestionText] = useState("לחץ על המשחק והתחל ללכת (חצים ורווח)!");
+  const [kangarooImg, setKangarooImg] = useState<HTMLImageElement | null>(null);
 
-        # Sideboard Elements
-        tk.Label(self.sideboard, text="קנגורו - מאת גולן גלנט", font=("Arial", 16, "bold"), 
-                 bg="#333", fg="#ffd700", wraplength=230).pack(pady=20)
-        
-        self.high_score_label = tk.Label(self.sideboard, text="שיא: 0", font=("Arial", 14, "bold"), 
-                                         bg="#333", fg="#00FF00")
-        self.high_score_label.pack(pady=5)
+  // 1. Load Image Asset
+  useEffect(() => {
+    const img = new Image();
+    img.src = "assets/pics/47.jpg";
+    img.onload = () => {
+      console.log("Kangaroo Image Loaded Successfully");
+      setKangarooImg(img);
+    };
+    img.onerror = (e) => {
+        console.error("Failed to load kangaroo image. Check path:", "frontend/src/public/assets/pics/kangaroo.png", e);
+    };
+  }, []);
 
-        self.score_label = tk.Label(self.sideboard, text="ניקוד: 0", font=("Arial", 14), 
-                                    bg="#333", fg="white")
-        self.score_label.pack(pady=10)
-
-        self.q_box = tk.Label(self.sideboard, text="טוען...", font=("Arial", 12), 
-                              bg="#444", fg="white", width=25, height=8, wraplength=200, relief="sunken")
-        self.q_box.pack(pady=20, padx=10)
-
-        instr_text = "קפצו על אדום או כחול!\n\nמקשים:\nחצים לתזוזה\nרווח לקפיצה"
-        instructions = tk.Label(self.sideboard, text=fix_rtl(instr_text), 
-                                font=("Arial", 12), bg="#333", fg="white", 
-                                justify=tk.RIGHT)
-        instructions.pack(side=tk.BOTTOM, pady=20)
-
-        # Canvas
-        self.canvas = tk.Canvas(self.main_frame, width=WIDTH, height=HEIGHT, bg="#87CEEB")
-        self.canvas.pack(side=tk.LEFT)
-
-        # --- Assets Loading (With Flip Logic) ---
-        self.kangaroo_right = None
-        self.kangaroo_left = None
-
-        if os.path.exists("kangaroo.png"):
-            if HAS_PIL:
-                # 1. Use Pillow to load and flip programmatically
-                try:
-                    pil_image = Image.open("kangaroo.png")
-                    # Create Right Facing
-                    self.kangaroo_right = ImageTk.PhotoImage(pil_image)
-                    # Create Left Facing (Mirror)
-                    self.kangaroo_left = ImageTk.PhotoImage(pil_image.transpose(Image.FLIP_LEFT_RIGHT))
-                except Exception as e:
-                    print(f"Error processing image with PIL: {e}")
-            else:
-                # 2. Fallback to standard Tkinter (No Flip)
-                try:
-                    img = tk.PhotoImage(file="kangaroo.png")
-                    self.kangaroo_right = img
-                    self.kangaroo_left = img # Both point to the same image
-                except Exception as e:
-                    print(f"Error loading image: {e}")
-
-        # --- Game State ---
-        self.questions = load_questions()
-        self.platforms = []
-        self.particles = []
-        
-        self.player = {
-            "x": 50, "y": 470, "w": 60, "h": 60, 
-            "dx": 0, "dy": 0, 
-            "grounded": False, "facing_right": True, 
-            "sinking": False, "can_move": True
-        }
-        
-        self.score = 0
-        self.answered_questions = set()
-        self.high_score = self.load_high_score()
-
-        self.camera_x = 0
-        self.game_started = False
-        self.current_q_index = 0
-        self.game_over = False
-        self.won = False
-        
-        # --- Input Handling ---
-        self.keys = {"left": False, "right": False, "up": False}
-        self.root.bind("<KeyPress>", self.key_down)
-        self.root.bind("<KeyRelease>", self.key_up)
-
-        # --- Start ---
-        self.init_level()
-        self.update_ui()
-        self.animate()
-
-    def load_high_score(self):
-        if os.path.exists(HIGH_SCORE_FILE):
-            try:
-                with open(HIGH_SCORE_FILE, "r") as f:
-                    return int(f.read().strip())
-            except:
-                return 0
-        return 0
-
-    def save_high_score(self):
-        if self.score > self.high_score:
-            self.high_score = self.score
-            try:
-                with open(HIGH_SCORE_FILE, "w") as f:
-                    f.write(str(self.high_score))
-            except Exception as e:
-                print(f"Could not save score: {e}")
-
-    def init_level(self):
-        self.platforms = []
-        cx = 0
-        
-        self.platforms.append(Platform(cx, 530, 300, 'start', -1))
-        cx += 400
-
-        for i, q in enumerate(self.questions):
-            self.platforms.append(Platform(cx, 400, 120, 'green', i))
-            cx += 180
-            self.platforms.append(Platform(cx, 280, 150, 'Blue', i, q['blue']))
-            self.platforms.append(Platform(cx, 480, 150, 'Red', i, q['red']))
-            cx += 280
-
-        self.platforms.append(Platform(cx, 500, 800, 'end', 99))
-
-    def key_down(self, e):
-        if e.keysym == 'Right': self.keys['right'] = True
-        elif e.keysym == 'Left': self.keys['left'] = True
-        elif e.keysym == 'space' or e.keysym == 'Up': self.keys['up'] = True
-
-    def key_up(self, e):
-        if e.keysym == 'Right': self.keys['right'] = False
-        elif e.keysym == 'Left': self.keys['left'] = False
-        elif e.keysym == 'space' or e.keysym == 'Up': self.keys['up'] = False
-
-    def update_physics(self):
-        p = self.player
-        if p['sinking']: return
-
-        if p['can_move']:
-            if self.keys['right']:
-                p['dx'] = SPEED
-                p['facing_right'] = True # Update facing direction
-            elif self.keys['left']:
-                p['dx'] = -SPEED
-                p['facing_right'] = False # Update facing direction
-            else:
-                p['dx'] = 0
-        else:
-            p['dx'] = 0
-
-        if p['can_move'] and self.keys['up'] and p['grounded']:
-            p['dy'] = JUMP_STRENGTH
-            p['grounded'] = False
-            play_sound('jump')
-
-        p['dy'] += GRAVITY
-        p['x'] += p['dx']
-        p['y'] += p['dy']
-
-        if p['x'] > 250:
-            self.camera_x = p['x'] - 250
-
-        if p['y'] > 580 and not p['sinking']:
-            p['sinking'] = True
-            play_sound('splash')
-            self.create_splash(p['x'] + p['w']/2, 590)
-            self.root.after(1000, lambda: self.trigger_game_over("צנחת לאגם! נסה שנית, רק הפעם תביא שנורקל!"))
-
-    def check_collisions(self):
-        p = self.player
-        if p['sinking']: return
-        
-        p['grounded'] = False
-        
-        for plat in self.platforms:
-            if not plat.visible: continue
-            
-            if (p['x'] < plat.x + plat.width and
-                p['x'] + p['w'] > plat.x and
-                p['y'] + p['h'] >= plat.y and
-                p['y'] + p['h'] <= plat.y + plat.height + 15 and
-                p['dy'] >= 0):
-
-                if self.is_trap(plat):
-                    for other in self.platforms:
-                        if other.q_index == plat.q_index:
-                            other.visible = False
-                    
-                    p['can_move'] = False
-                    play_sound('wrong')
-                else:
-                    p['grounded'] = True
-                    p['dy'] = 0
-                    p['y'] = plat.y - p['h']
-                    self.handle_safe_landing(plat)
-
-    def is_trap(self, plat):
-        if plat.type in ['start', 'end', 'green']: return False
-        current_q = self.questions[plat.q_index]
-        return plat.type != current_q['correct']
-
-    def handle_safe_landing(self, plat):
-        if plat.type == 'end':
-            self.trigger_win()
-            return
-        
-        if plat.type == 'green':
-            self.game_started = True
-            self.current_q_index = plat.q_index
-            self.update_ui()
-            return
-
-        if plat.type in ['Blue', 'Red']:
-            if plat.q_index not in self.answered_questions:
-                self.score += 1
-                self.answered_questions.add(plat.q_index)
-                play_sound('point')
-                self.update_ui()
-
-        for other in self.platforms:
-            if (other.q_index == plat.q_index and 
-                other != plat and 
-                (other.type == 'Red' or other.type == 'Blue')):
-                other.visible = False
-
-    def update_ui(self):
-        self.high_score_label.config(text=fix_rtl(f"שיא: {self.high_score}"))
-        self.score_label.config(text=fix_rtl(f"ניקוד: {self.score}"))
-
-        if not self.game_started:
-            msg = "התחל ללכת וקפוץ לפלטפורמה הירוקה הראשונה כדי להתחיל בחידון!"
-            self.q_box.config(text=fix_rtl(msg))
-        elif self.current_q_index < len(self.questions):
-            txt = self.questions[self.current_q_index]['text']
-            self.q_box.config(text=fix_rtl(txt))
-
-    def create_splash(self, x, y):
-        for _ in range(25):
-            self.particles.append(Particle(x, y))
-
-    def trigger_game_over(self, msg):
-        if self.game_over: return
-        self.game_over = True
-        self.save_high_score()
-        
-        title = fix_rtl("הפסדת!")
-        body = fix_rtl(f"{msg}\nניקוד סופי: {self.score}\nרוצה לנסות שוב?")
-        
-        response = messagebox.askretrycancel(title, body)
-        if response:
-            self.reset_game()
-        else:
-            self.root.destroy()
-
-    def trigger_win(self):
-        if self.won: return
-        self.won = True
-        play_sound('win')
-        self.save_high_score()
-        
-        title = fix_rtl("ניצחון!")
-        body = fix_rtl(f"הגעת לאוסטרליה!\nניקוד סופי: {self.score}\nרוצה לשחק שוב?")
-        
-        response = messagebox.askyesno(title, body)
-        if response:
-            self.reset_game()
-        else:
-            self.root.destroy()
-
-    def reset_game(self):
-        self.player = {
-            "x": 50, "y": 470, "w": 60, "h": 60, 
-            "dx": 0, "dy": 0, 
-            "grounded": False, "facing_right": True, 
-            "sinking": False, "can_move": True
-        }
-        self.score = 0
-        self.answered_questions = set()
-        self.high_score = self.load_high_score()
-        
-        self.camera_x = 0
-        self.game_started = False
-        self.current_q_index = 0
-        self.game_over = False
-        self.won = False
-        self.particles = []
-        self.init_level()
-        self.update_ui()
-
-    def animate(self):
-        if self.game_over and not self.player['sinking']: return
-
-        self.update_physics()
-        self.check_collisions()
-        self.draw()
-        
-        self.root.after(16, self.animate)
-
-    def draw(self):
-        self.canvas.delete("all")
-        
-        # Draw Water
-        self.canvas.create_rectangle(0, 580, WIDTH, 600, fill="#0000CD", outline="")
-
-        # Draw Platforms
-        for p in self.platforms:
-            if not p.visible: continue
-            
-            screen_x = p.x - self.camera_x
-            if screen_x + p.width < 0 or screen_x > WIDTH: continue
-
-            color = "#2ecc71"
-            if p.type == 'Red': color = "#e74c3c"
-            elif p.type == 'Blue': color = "#3498db"
-            elif p.type == 'start': color = "#27ae60"
-            elif p.type == 'end': color = "#ffd700"
-            
-            self.canvas.create_rectangle(screen_x, p.y, screen_x + p.width, p.y + p.height, 
-                                         fill=color, outline="")
-            
-            if p.label:
-                self.canvas.create_text(
-                    screen_x + p.width/2, 
-                    p.y + 15, 
-                    text=fix_rtl(p.label), 
-                    fill="white", 
-                    font=("Arial", 10, "bold")
-                )
-            
-            if p.type == 'end':
-                self.canvas.create_rectangle(screen_x, p.y + p.height, screen_x + p.width, HEIGHT, 
-                                             fill="#DAA520", outline="")
-
-        # Draw Player (With Flip Logic)
-        p = self.player
-        if not p['sinking']:
-            screen_px = p['x'] - self.camera_x
-            
-            # Select correct image based on direction
-            current_img = self.kangaroo_right if p['facing_right'] else self.kangaroo_left
-
-            if current_img:
-                self.canvas.create_image(screen_px, p['y'], anchor=tk.NW, image=current_img)
-            else:
-                self.canvas.create_rectangle(screen_px, p['y'], screen_px + p['w'], p['y'] + p['h'], 
-                                             fill="#8B4513", outline="")
-
-        # Draw Particles
-        for i in range(len(self.particles) - 1, -1, -1):
-            part = self.particles[i]
-            part.update()
-            if part.life <= 0:
-                self.particles.pop(i)
-                continue
-                
-            sx = part.x - self.camera_x
-            self.canvas.create_oval(sx - part.radius, part.y - part.radius,
-                                    sx + part.radius, part.y + part.radius,
-                                    fill="#4FC3F7", outline="")
-
-# ==========================================
-# BOOTSTRAP
-# ==========================================
-if __name__ == "__main__":
-    root = tk.Tk()
+  // 2. Focus on Mount logic
+  useEffect(() => {
+    // Focus the container so keyboard events work immediately
+    if (containerRef.current) {
+      containerRef.current.focus();
+    }
+    initLevel();
+    // Start loop
+    requestRef.current = requestAnimationFrame(tick);
     
-    ws = root.winfo_screenwidth()
-    hs = root.winfo_screenheight()
-    w_total = WIDTH + 250
-    x = (ws/2) - (w_total/2)
-    y = (hs/2) - (HEIGHT/2)
-    root.geometry('%dx%d+%d+%d' % (w_total, HEIGHT, x, y))
-    
-    game = KangarooGame(root)
-    root.mainloop()
+    return () => {
+      if (requestRef.current) cancelAnimationFrame(requestRef.current);
+    };
+  }, []);
 
-GamesHub.tsx 
+  const initLevel = () => {
+    const plats: Platform[] = [];
+    let cx = 0;
+
+    // Start Platform
+    plats.push({ x: cx, y: 530, width: 300, height: 30, type: 'start', q_index: -1, label: '', visible: true });
+    cx += 400;
+
+    // Questions
+    DEFAULT_QUESTIONS.forEach((q, i) => {
+      // Green (Question) Platform
+      plats.push({ x: cx, y: 400, width: 120, height: 30, type: 'green', q_index: i, label: '', visible: true });
+      cx += 180;
+      
+      // Answers
+      plats.push({ x: cx, y: 280, width: 150, height: 30, type: 'Blue', q_index: i, label: q.blue, visible: true });
+      plats.push({ x: cx, y: 480, width: 150, height: 30, type: 'Red', q_index: i, label: q.red, visible: true });
+      cx += 280;
+    });
+
+    // End Platform
+    plats.push({ x: cx, y: 500, width: 800, height: 30, type: 'end', q_index: 99, label: '', visible: true });
+
+    platformsRef.current = plats;
+    
+    // Reset Player
+    playerRef.current = {
+      x: 50, y: 470, w: 60, h: 60,
+      dx: 0, dy: 0,
+      grounded: false, facingRight: true,
+      sinking: false, canMove: true
+    };
+    
+    cameraXRef.current = 0;
+    scoreRef.current = 0;
+    setUiScore(0);
+    answeredRef.current = new Set();
+    particlesRef.current = [];
+    
+    // Update both Ref (for loop) and State (for UI)
+    gameStateRef.current = 'playing';
+    setUiState('playing');
+    setCurrentQuestionText("התחל ללכת וקפוץ לפלטפורמה הירוקה הראשונה!");
+  };
+
+  // ==========================================
+  // GAME LOOP & LOGIC
+  // ==========================================
+
+  const createSplash = (x: number, y: number) => {
+    for (let i = 0; i < 25; i++) {
+      particlesRef.current.push({
+        x, y,
+        dx: (Math.random() - 0.5) * 8,
+        dy: Math.random() * -10 - 5,
+        radius: Math.random() * 4 + 2,
+        life: 1.0,
+        decay: Math.random() * 0.02 + 0.01
+      });
+    }
+  };
+
+  const updatePhysics = () => {
+    const p = playerRef.current;
+    if (p.sinking) return;
+
+    // Horizontal Move
+    if (p.canMove) {
+      if (keysRef.current.right) {
+        p.dx = SPEED;
+        p.facingRight = true;
+      } else if (keysRef.current.left) {
+        p.dx = -SPEED;
+        p.facingRight = false;
+      } else {
+        p.dx = 0;
+      }
+    } else {
+      p.dx = 0;
+    }
+
+    // Jump
+    if (p.canMove && keysRef.current.up && p.grounded) {
+      p.dy = JUMP_STRENGTH;
+      p.grounded = false;
+      playSound('jump');
+    }
+
+    // Apply Physics
+    p.dy += GRAVITY;
+    p.x += p.dx;
+    p.y += p.dy;
+
+    // Camera follow
+    if (p.x > 250) {
+      cameraXRef.current = p.x - 250;
+    }
+
+    // Water check
+    if (p.y > 580 && !p.sinking) {
+      p.sinking = true;
+      playSound('splash');
+      createSplash(p.x + p.w / 2, 590);
+      
+      setTimeout(() => {
+          handleGameOver("צנחת לאגם! נסה שנית!");
+      }, 1000);
+    }
+  };
+
+  const checkCollisions = () => {
+    const p = playerRef.current;
+    if (p.sinking) return;
+
+    p.grounded = false;
+
+    platformsRef.current.forEach(plat => {
+      if (!plat.visible) return;
+
+      // AABB Collision
+      if (
+        p.x < plat.x + plat.width &&
+        p.x + p.w > plat.x &&
+        p.y + p.h >= plat.y &&
+        p.y + p.h <= plat.y + plat.height + 15 && // Tolerance
+        p.dy >= 0 // Only land when falling
+      ) {
+        // Trap Logic
+        const isTrap = () => {
+          if (['start', 'end', 'green'].includes(plat.type)) return false;
+          const q = DEFAULT_QUESTIONS[plat.q_index];
+          if (!q) return false;
+          return plat.type !== q.correct;
+        };
+
+        if (isTrap()) {
+          // Hide trap and sibling
+          plat.visible = false;
+          platformsRef.current.forEach(other => {
+             if(other.q_index === plat.q_index) other.visible = false;
+          });
+
+          p.canMove = false;
+          playSound('wrong');
+        } else {
+          // Land Safely
+          p.grounded = true;
+          p.dy = 0;
+          p.y = plat.y - p.h;
+          handleSafeLanding(plat);
+        }
+      }
+    });
+  };
+
+  const handleSafeLanding = (plat: Platform) => {
+    if (plat.type === 'end') {
+      if (gameStateRef.current !== 'win') handleWin();
+      return;
+    }
+
+    if (plat.type === 'green') {
+      const q = DEFAULT_QUESTIONS[plat.q_index];
+      if (q) setCurrentQuestionText(q.text);
+      return;
+    }
+
+    if (['Blue', 'Red'].includes(plat.type)) {
+      if (!answeredRef.current.has(plat.q_index)) {
+        scoreRef.current += 1;
+        setUiScore(scoreRef.current);
+        answeredRef.current.add(plat.q_index);
+        playSound('point');
+      }
+
+      platformsRef.current.forEach(other => {
+        if (other.q_index === plat.q_index && other !== plat && (other.type === 'Red' || other.type === 'Blue')) {
+          other.visible = false;
+        }
+      });
+    }
+  };
+
+  const updateParticles = () => {
+    for (let i = particlesRef.current.length - 1; i >= 0; i--) {
+      const p = particlesRef.current[i];
+      p.x += p.dx;
+      p.dy += 0.4;
+      p.y += p.dy;
+      p.life -= p.decay;
+
+      if (p.life <= 0) {
+        particlesRef.current.splice(i, 1);
+      }
+    }
+  };
+
+  const draw = (ctx: CanvasRenderingContext2D) => {
+    ctx.clearRect(0, 0, WIDTH, HEIGHT);
+    
+    // Background
+    ctx.fillStyle = "#87CEEB";
+    ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+    const cx = cameraXRef.current;
+
+    // Platforms
+    platformsRef.current.forEach(p => {
+      if (!p.visible) return;
+      const sx = p.x - cx;
+      if (sx + p.width < 0 || sx > WIDTH) return; 
+
+      let color = "#2ecc71";
+      if (p.type === 'Red') color = "#e74c3c";
+      else if (p.type === 'Blue') color = "#3498db";
+      else if (p.type === 'start') color = "#27ae60";
+      else if (p.type === 'end') color = "#ffd700";
+
+      ctx.fillStyle = color;
+      ctx.fillRect(sx, p.y, p.width, p.height);
+
+      if (p.label) {
+        ctx.fillStyle = "white";
+        ctx.font = "bold 14px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(p.label, sx + p.width / 2, p.y + 20);
+      }
+      
+      if(p.type === 'end') {
+          ctx.fillStyle = "#DAA520";
+          ctx.fillRect(sx, p.y + p.height, p.width, HEIGHT - (p.y + p.height));
+      }
+    });
+
+    // Water
+    ctx.fillStyle = "#0000CD";
+    ctx.fillRect(0, 580, WIDTH, 20);
+
+    // Player
+    const p = playerRef.current;
+    if (!p.sinking) {
+      const px = p.x - cx;
+      
+      if (kangarooImg) {
+        ctx.save();
+        if (!p.facingRight) {
+           ctx.translate(px + p.w, p.y);
+           ctx.scale(-1, 1);
+           ctx.drawImage(kangarooImg, 0, 0, p.w, p.h);
+        } else {
+           ctx.drawImage(kangarooImg, px, p.y, p.w, p.h);
+        }
+        ctx.restore();
+      } else {
+        // Fallback if image fails to load
+        ctx.fillStyle = "#8B4513";
+        ctx.fillRect(px, p.y, p.w, p.h);
+        
+        // Debug text on player
+        ctx.fillStyle = "white";
+        ctx.font = "10px Arial";
+        ctx.fillText("No Img", px, p.y - 5);
+      }
+    }
+
+    // Particles
+    particlesRef.current.forEach(part => {
+      const sx = part.x - cx;
+      ctx.fillStyle = "#4FC3F7";
+      ctx.beginPath();
+      ctx.arc(sx, part.y, part.radius, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  };
+
+  // Main Loop
+  const tick = () => {
+    // Check Ref, not State!
+    if (gameStateRef.current === 'playing') {
+      updatePhysics();
+      checkCollisions();
+      updateParticles();
+    }
+    
+    if (canvasRef.current) {
+      const ctx = canvasRef.current.getContext('2d');
+      if (ctx) draw(ctx);
+    }
+    
+    // Always loop to keep drawing (unless component unmounts)
+    requestRef.current = requestAnimationFrame(tick);
+  };
+
+  // ==========================================
+  // INPUT HANDLING
+  // ==========================================
+  
+  // We attach these to the Div Container, not Window
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', ' '].includes(e.key)) {
+        // Prevent page scrolling
+        e.preventDefault(); 
+    }
+
+    if (['ArrowLeft', 'Left'].includes(e.key)) keysRef.current.left = true;
+    if (['ArrowRight', 'Right'].includes(e.key)) keysRef.current.right = true;
+    if (['ArrowUp', 'Up', ' '].includes(e.key)) keysRef.current.up = true;
+  };
+
+  const handleKeyUp = (e: React.KeyboardEvent) => {
+    if (['ArrowLeft', 'Left'].includes(e.key)) keysRef.current.left = false;
+    if (['ArrowRight', 'Right'].includes(e.key)) keysRef.current.right = false;
+    if (['ArrowUp', 'Up', ' '].includes(e.key)) keysRef.current.up = false;
+  };
+
+  // ==========================================
+  // STATE TRANSITIONS
+  // ==========================================
+
+  const handleGameOver = (msg: string) => {
+    gameStateRef.current = 'gameover';
+    setUiState('gameover');
+    setCurrentQuestionText(msg);
+    onUpdateHighScore(scoreRef.current);
+  };
+
+  const handleWin = () => {
+    gameStateRef.current = 'win';
+    setUiState('win');
+    playSound('win');
+    setCurrentQuestionText("! הגעת לאוסטרליה!");
+    onUpdateHighScore(scoreRef.current);
+  };
+
+  const handleRestart = () => {
+    initLevel();
+    // Refocus container to ensure controls work after restart
+    if (containerRef.current) containerRef.current.focus();
+  };
+
+  // ==========================================
+  // RENDER
+  // ==========================================
+  return (
+    <div 
+        ref={containerRef}
+        className="container" 
+        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px', outline: 'none' }}
+        tabIndex={0} // Allows this div to receive keyboard focus
+        onKeyDown={handleKeyDown}
+        onKeyUp={handleKeyUp}
+    >
+      
+      <div style={{ display: 'flex', width: '100%', maxWidth: '1060px', gap: '10px' }}>
+        
+        {/* CANVAS */}
+        <canvas 
+          ref={canvasRef} 
+          width={WIDTH} 
+          height={HEIGHT} 
+          style={{ border: '4px solid #333', borderRadius: '8px', background: '#87CEEB', cursor: 'pointer' }}
+          onClick={() => containerRef.current?.focus()} // Click to focus fix
+        />
+
+        {/* SIDEBOARD */}
+        <div style={{ 
+          width: '250px', 
+          background: '#333', 
+          color: 'white', 
+          padding: '20px', 
+          display: 'flex', 
+          flexDirection: 'column', 
+          borderRadius: '8px',
+          border: '4px solid #555'
+        }}>
+          <h2 style={{ color: '#ffd700', textAlign: 'center' }}>קנגורו</h2>
+          <p style={{ textAlign: 'center', fontSize: '0.9rem' }}>מאת גולן גלנט</p>
+          
+          <div style={{ margin: '20px 0', textAlign: 'center' }}>
+            <h3 style={{ color: '#00FF00' }}>שיא: {Math.max(currentHighScore, uiScore)}</h3>
+            <h3>ניקוד: {uiScore}</h3>
+          </div>
+
+          <div style={{ 
+            background: '#444', 
+            padding: '15px', 
+            borderRadius: '4px', 
+            minHeight: '100px',
+            border: '2px solid #222',
+            textAlign: 'right',
+            direction: 'rtl'
+          }}>
+            {currentQuestionText}
+          </div>
+
+          <div style={{ marginTop: 'auto', textAlign: 'right', direction: 'rtl' }}>
+             <p>קפצו על אדום או כחול!</p>
+             <hr style={{borderColor: '#555'}}/>
+             <p>מקשים:<br/>חצים לתזוזה<br/>רווח לקפיצה</p>
+          </div>
+
+          <button onClick={onClose} style={{ marginTop: '20px', padding: '10px', background: '#c0392b', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '4px' }}>
+            יציאה
+          </button>
+        </div>
+      </div>
+
+      {/* MODALS */}
+      {uiState === 'gameover' && (
+        <div style={modalOverlayStyle}>
+          <div style={modalContentStyle}>
+            <h2>איזה כשלון! צנחת לאגם! רק לפעם הבאה אל תשכח את השנורקל חביבי!</h2>
+            <p>ניקוד סופי: {uiScore}</p>
+            <div style={{display:'flex', gap:'10px', justifyContent:'center'}}>
+              <button onClick={handleRestart} style={btnStyle}>נסה שוב</button>
+              <button onClick={onClose} style={{...btnStyle, background: '#e74c3c'}}>יציאה</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {uiState === 'win' && (
+        <div style={modalOverlayStyle}>
+          <div style={modalContentStyle}>
+            <h2>בשעה טובה נחתת באוסטרליה!</h2>
+            <p>עכשיו אפשר להשתזף בנחת!</p>
+            <p>ניקוד סופי: {uiScore}</p>
+            <div style={{display:'flex', gap:'10px', justifyContent:'center'}}>
+              <button onClick={handleRestart} style={btnStyle}>שחק שוב</button>
+              <button onClick={onClose} style={{...btnStyle, background: '#e74c3c'}}>יציאה</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Styles
+const modalOverlayStyle: React.CSSProperties = {
+  position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+  background: 'rgba(0,0,0,0.7)',
+  display: 'flex', justifyContent: 'center', alignItems: 'center',
+  zIndex: 1000
+};
+
+const modalContentStyle: React.CSSProperties = {
+  background: 'white', padding: '30px', borderRadius: '12px',
+  textAlign: 'center', minWidth: '300px', direction: 'rtl', color: 'black'
+};
+
+const btnStyle: React.CSSProperties = {
+  padding: '10px 20px', fontSize: '1rem',
+  background: '#2ecc71', color: 'white',
+  border: 'none', borderRadius: '6px', cursor: 'pointer'
+};
+
+export default KangarooGame; 
+
+Gamehub.tsx
 
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom"; 
+import { useParams, useNavigate } from "react-router-dom";
 import api, { API_URL } from "../services/api";
 import type { Game } from "../models/types";
 import SnakeGame from "../games/SnakeGame";
@@ -514,13 +655,14 @@ import PixelMathGame from "../games/Pencil";
 import BalloonGame from "../games/Balloon";
 import CaterpillarGame from "../games/Caterpillar";
 import CrawlerGame from "../games/Crawler";
-import BlackjackGame from "../games/Blackjack"; 
-import MoleGame from "../games/Mole"; 
+import BlackjackGame from "../games/Blackjack";
+import MoleGame from "../games/Mole";
+import KangarooGame from "../games/Kangaroo";
 
 export default function GamesHub() {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  
+
   // 1. Get the gameName from the URL (if it exists)
   const { gameName } = useParams();
   const navigate = useNavigate();
@@ -715,6 +857,19 @@ export default function GamesHub() {
       );
     }
 
+    if (activeGame.name === "Kan-Ga-Roo") { 
+      return (
+        <KangarooGame
+          gameName={activeGame.name}
+          currentHighScore={activeGame.high_score ?? 0}
+          onClose={handleCloseGame}
+          onUpdateHighScore={(newScore: number) =>
+            handleSubmitScore(activeGame.name, newScore)
+          }
+        />
+      );
+    }
+
     return (
       <div className="container">
         <h2>Game Component Not Found for {activeGame.name}</h2>
@@ -785,4 +940,8 @@ export default function GamesHub() {
   );
 }
 
-I have this kangaroo.py file of a game. I want to implement it in my React frontend Game Hub as pasted here. Please convert this kangaroo.py as identical as possible to a tsx file to fit in the React game Hub (don't forget its connection to the server as appears in the examples of other games in the hub).
+I have this kangaroo.tsx game in my frontend but it has three major issues: 
+First of all, it doesn't recognize the png file of the kangaroo I wanted to put an address for the sprite, and it still shows a brown rectangle. I tried to put it in the public assets but it still doesn't work.
+Second, the distance between the platforms is too short so the player can cheat and jump from green platform to another. Widen the gap so no cheat will be allowed.
+Third, after playing 5-6 times sometimes the game crashes and the user is logged out somehow. 
+Please fix the issues.  
