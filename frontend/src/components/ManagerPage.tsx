@@ -94,13 +94,14 @@ export default function ManagerPage() {
   };
 
   const handleDownloadCSV = () => {
-    const headers = ["ID", "Game Name", "High Score Player", "Top Player ID", "Image URL"];
+    // Updated headers to match the new table structure
+    const headers = ["ID", "Game Name", "High Score Player", "High Score", "Image URL"];
 
     const rows = games.map((game) => [
       game.id,
       `"${game.name}"`,
       `"${game.high_score_player_username || "No records"}"`,
-      game.high_score_player || "-",
+      game.high_score ?? 0, // Export the actual score
       game.image || "No Image",
     ]);
 
@@ -190,8 +191,9 @@ export default function ManagerPage() {
         <thead>
           <tr style={{ background: "#f4f4f4" }}>
             <th>Game Name</th>
+            <th>High Score Player</th>
             <th>High Score</th>
-            <th>Top Player ID</th>
+            {/* Removed 'Top Player ID' column */}
             <th>Image</th>
             <th>Actions</th>
           </tr>
@@ -199,6 +201,7 @@ export default function ManagerPage() {
         <tbody>
           {games.map((game) => (
             <tr key={game.id}>
+              {/* --- Game Name --- */}
               <td>
                 <strong>{game.name}</strong>
                 <br />
@@ -206,6 +209,8 @@ export default function ManagerPage() {
                   ID: {game.id.slice(0, 8)}...
                 </span>
               </td>
+
+              {/* --- High Score Player (Name) --- */}
               <td>
                 {game.high_score_player_username ? (
                   <span style={{ color: "green", fontWeight: "bold" }}>
@@ -217,19 +222,23 @@ export default function ManagerPage() {
                   </span>
                 )}
               </td>
+
+              {/* --- High Score (Numeric) --- */}
               <td>
-                {game.high_score_player ? (
-                  <span style={{ fontSize: "0.8em", fontFamily: "monospace" }}>
-                    {game.high_score_player}
+                {game.high_score !== null && game.high_score !== undefined ? (
+                  <span style={{ fontSize: "1.1em", fontWeight: "bold" }}>
+                    {game.high_score}
                   </span>
                 ) : (
                   <span style={{ color: "#999" }}>-</span>
                 )}
               </td>
+
+              {/* --- Image --- */}
               <td>
                 {game.image && (
                   <img
-                    src={game.image} 
+                    src={game.image}
                     alt={game.name}
                     style={{
                       width: "50px",
@@ -239,6 +248,8 @@ export default function ManagerPage() {
                   />
                 )}
               </td>
+
+              {/* --- Actions --- */}
               <td>
                 <button onClick={() => setEditingGame(game)}>Edit</button>
                 <button

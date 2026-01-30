@@ -14,7 +14,7 @@ The project features a secure user authentication system, a centralized database
 
 | Category | Game | Description |
 | --- | --- | --- |
-| **Coordination** | 🎯 **Snake, Whack-A-Mole** | Classic coordination and reflex-building games. |
+| **Coordination** | 🎯 **Snake, Whack-A-Mole, Kan-Ga-Roo** | Classic coordination and reflex-building games. |
 | **Mathematics** | 🔢 **Math Suite** | Includes *Balloon, Caterpillar, Blackjack,* and *Crawler* to sharpen arithmetic skills. |
 | **Creativity** | 🎨 **Pencil Game** | A dedicated space for honing creational and artistic skills. |
 

@@ -1,4 +1,3 @@
-kangaroo.tsx
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useRef, useState } from 'react';
@@ -67,18 +66,39 @@ const GAP_TO_ANSWER = 250;
 const GAP_TO_NEXT = 320;
 const PLATFORM_WIDTH = 200;
 
-const DEFAULT_QUESTIONS: Question[] = [
+// NEW: All 20 Questions from CSV
+const RAW_QUESTIONS: Question[] = [
   { text: "מהו צבע השמש?", blue: "צהוב", red: "סגול", correct: "Blue" },
   { text: "חצי מ-30?", blue: "15", red: "20", correct: "Blue" },
   { text: "מה צפוני יותר?", blue: "צפת", red: "אילת", correct: "Blue" },
-  { text: "5:3?", blue: "1.333", red: "1.666", correct: "Red" },
+  { text: "5:3?", blue: "1.333", red: "1.6666", correct: "Red" },
   { text: "מה יותר כבד?", blue: "קילו נוצות", red: "חצי קילו נפט", correct: "Blue" },
   { text: "איפה נמצאת ירושלים?", blue: "במערב", red: "במזרח", correct: "Red" },
   { text: "90*3?", blue: "270", red: "300", correct: "Blue" },
   { text: "מי המציא את הנורה?", blue: "גלילאו", red: "אדיסון", correct: "Red" },
   { text: 'השלם: "שלום ___"', blue: "חייזר", red: "חבר", correct: "Red" },
   { text: "מה יותר שמן?", blue: "חזיר", red: "פיל", correct: "Red" },
+  { text: 'לפי ברי סחרוף: "כולנו ____"', blue: "פועלים", red: "עבדים", correct: "Red" },
+  { text: "מה רשום על הסביבון?", blue: "נ.ג.ה.פ", red: "נ.י.ל.י", correct: "Blue" },
+  { text: "מה יותר חזק?", blue: "מר עולם", red: "מיס יוניברס", correct: "Blue" },
+  { text: "4^4?", blue: "256", red: "444", correct: "Blue" },
+  { text: "איך קוראים ללהקה של קובי אוז?", blue: "מסקינטייפ", red: "טיפקס", correct: "Red" },
+  { text: "שם נרדף ליפן?", blue: "ארץ השמש העולה", red: "אדמת הירח המיסטי", correct: "Blue" },
+  { text: "המתעמלת עושה סלטה עם...", blue: "בורג", red: "פלומבה", correct: "Blue" },
+  { text: "אש, רוח, אדמה ומה עוד?", blue: "מים", red: "קרח", correct: "Blue" },
+  { text: "מה עומד להכחד?", blue: "ציפור מיינה", red: "דוב פנדה", correct: "Red" },
+  { text: "באיזה קוטב הפינגווין???🐧", blue: "הדרומי", red: "הצפוני", correct: "Blue" },
 ];
+
+// UTILS: Fisher-Yates Shuffle
+const shuffleArray = <T,>(array: T[]): T[] => {
+  const newArr = [...array];
+  for (let i = newArr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
+  }
+  return newArr;
+};
 
 const KangarooGame: React.FC<KangarooGameProps> = ({
   currentHighScore,
@@ -109,6 +129,9 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
   const keysRef = useRef<{ [key: string]: boolean }>({ left: false, right: false, up: false });
   const scoreRef = useRef(0);
   const answeredRef = useRef<Set<number>>(new Set());
+  
+  // NEW: Ref to hold the randomized questions for the current run
+  const activeQuestionsRef = useRef<Question[]>([]);
   
   // Image Ref
   const kangarooImgRef = useRef<HTMLImageElement | null>(null);
@@ -216,12 +239,15 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
     const plats: Platform[] = [];
     let cx = 0;
 
+    // 1. Shuffle Questions for this run
+    activeQuestionsRef.current = shuffleArray(RAW_QUESTIONS);
+
     // Start Platform
     plats.push({ x: cx, y: 530, width: 300, height: 30, type: 'start', q_index: -1, label: '', visible: true });
     cx += 380;
 
-    // Questions
-    DEFAULT_QUESTIONS.forEach((q, i) => {
+    // Questions Generation
+    activeQuestionsRef.current.forEach((q, i) => {
       // Green
       plats.push({ x: cx, y: 450, width: 140, height: 30, type: 'green', q_index: i, label: '', visible: true });
       cx += GAP_TO_ANSWER;
@@ -345,7 +371,8 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
         // Logic for landing on platform
         const isTrap = () => {
           if (['start', 'end', 'green'].includes(plat.type)) return false;
-          const q = DEFAULT_QUESTIONS[plat.q_index];
+          // Look up question in active list (randomized)
+          const q = activeQuestionsRef.current[plat.q_index];
           if (!q) return false;
           return plat.type !== q.correct;
         };
@@ -379,7 +406,8 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
 
     // Update Text Question (Throttled)
     if (plat.type === 'green') {
-      const q = DEFAULT_QUESTIONS[plat.q_index];
+      // Look up in randomized list
+      const q = activeQuestionsRef.current[plat.q_index];
       if (q && q.text !== currentQuestionText) {
           setCurrentQuestionText(q.text);
       }
@@ -693,30 +721,4 @@ const btnStyle: React.CSSProperties = {
 
 export default KangarooGame;
 
-
-questions.csv
-
-Number,Questions,Blue,Red,Correct
-1,מהו צבע השמש?,צהוב,סגול,Blue
-2,חצי מ-30?,15,20,Blue
-3,מה צפוני יותר?,צפת,אילת,Blue
-4,5:3?,1.333,1.6666,Red
-5,מה יותר כבד?,קילו נוצות,חצי קילו נפט,Blue
-6,איפה נמצאת ירושלים?,במערב,במזרח,Red
-7,90*3?,270,300,Blue
-8,מי המציא את הנורה?,גלילאו,אדיסון,Red
-9,"השלם: ""שלום ___""",חייזר,חבר,Red
-10,מה יותר שמן?,חזיר,פיל,Red
-11,"לפי ברי סחרוף: ""כולנו ____""",פועלים,עבדים,Red
-12,מה רשום על הסביבון?,נ.ג.ה.פ,נ.י.ל.י,Blue
-13,מה יותר חזק?,מר עולם,מיס יוניברס,Blue
-14,4^4?,256,444,Blue
-15,איך קוראים ללהקה של קובי אוז?,מסקינטייפ,טיפקס,Red
-16,שם נרדף ליפן?,ארץ השמש העולה,אדמת הירח המיסטי,Blue
-17,המתעמלת עושה סלטה עם...,בורג,פלומבה,Blue
-18,"אש, רוח, אדמה ומה עוד?",מים,קרח,Blue
-19,מה עומד להכחד?,ציפור מיינה,דוב פנדה,Red
-20,באיזה קוטב הפינגווין???🐧,הדרומי,הצפוני,Blue
-
-
-In this Kangaroo.tsx program of React frontend I want two things: Implement the new question.csv in the question array to update to these 20 questions. Also I want that in each game the order of the 20 questions will be randomized, to diversify the playing. Thanks! 
+The game in tsx file crashes sometimes. Please fix the code and do not let the game crash.
