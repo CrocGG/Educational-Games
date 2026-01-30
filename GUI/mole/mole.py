@@ -5,13 +5,11 @@ import os
 import math
 import array
 
-# --- Configuration ---
 SCREEN_WIDTH = 600
 SCREEN_HEIGHT = 750 
 CELL_SIZE = 200
 FPS = 60
 
-# --- Colors ---
 COLOR_BG = (126, 200, 80)
 COLOR_UI_BAR = (255, 245, 220)
 COLOR_HOLE = (60, 40, 30)
@@ -41,7 +39,7 @@ def generate_sound(sound_type, duration=0.1):
             value = int(10000 * math.sin(2 * math.pi * freq * t) * envelope)
         elif sound_type == "thud":
             value = int(15000 * random.uniform(-1, 1) * envelope)
-        elif sound_type == "miss": # Lower pitch for bad hits
+        elif sound_type == "miss": 
             freq = 150 - (i / n_samples) * 100
             value = int(10000 * math.sin(2 * math.pi * freq * t) * envelope)
         sound_buffer.append(value)
@@ -69,7 +67,6 @@ class Mole:
             self.sounds['rise'].play()
 
     def whack(self):
-        # Returns True if hit successfully, False if missed/empty
         if self.state in ['rising', 'up']:
             self.state = 'hit'
             self.timer = pygame.time.get_ticks()
@@ -89,7 +86,7 @@ class Mole:
         elif self.state == 'up':
             if current_time - self.timer > self.visible_time:
                 self.state = 'sinking'
-                missed = True # Natural miss (too slow)
+                missed = True 
         elif self.state == 'hit':
             if current_time - self.timer > 400: 
                 self.state = 'sinking'
@@ -122,7 +119,6 @@ class Mole:
                 pygame.draw.circle(screen, (255, 255, 255), (mole_rect.x + 68, eye_y - 3), 3)
                 pygame.draw.arc(screen, (0,0,0), (mole_rect.x + 40, mole_rect.y + 70, 20, 10), 3.14, 6.28, 2)
             else:
-                # Dead Eyes (XX)
                 lx, ly = mole_rect.x + 30, eye_y
                 pygame.draw.line(screen, (50,0,0), (lx - 8, ly - 8), (lx + 8, ly + 8), 3)
                 pygame.draw.line(screen, (50,0,0), (lx + 8, ly - 8), (lx - 8, ly + 8), 3)
@@ -213,17 +209,14 @@ def main():
                 if event.type == pygame.KEYDOWN:
                     num = key_map.get(event.key, -1)
                     if 1 <= num <= 9:
-                        # Attempt to whack the mole
                         hit_successful = moles[num-1].whack()
                         
                         if hit_successful:
-                            # CORRECT HIT
                             score += 10
                             if score > high_score: high_score = score; save_high_score(high_score)
                             interval = max(900, interval - 20) 
                             duration = max(1000, duration - 20)
                         else:
-                            # WRONG HIT (Empty hole) - LOSE LIFE
                             lives -= 1
                             sounds['miss'].play()
                             if lives <= 0: state = "GAMEOVER"
@@ -245,12 +238,11 @@ def main():
                 next_popup = now + interval
 
             for m in moles:
-                if m.update(): # Returns true if missed naturally (timer ran out)
+                if m.update(): 
                     lives -= 1
                     sounds['miss'].play()
                     if lives <= 0: state = "GAMEOVER"
 
-        # --- Drawing ---
         screen.fill(COLOR_BG)
         
         pygame.draw.rect(screen, COLOR_UI_BAR, (0, 0, SCREEN_WIDTH, 90))

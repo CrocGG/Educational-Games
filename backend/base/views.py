@@ -10,7 +10,6 @@ from .models import Game, Player
 from .serializers import GameSerializer, PlayerSerializer
 from .permissions import IsAdminOrReadOnly
 
-# --- JWT Customization ---
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
@@ -22,7 +21,6 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
 
-# --- Utility Views ---
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def health_check(request):
@@ -31,7 +29,6 @@ def health_check(request):
     """
     return Response({"status": "ok"}, status=status.HTTP_200_OK)
 
-# --- Auth Views ---
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def register_user(request):
@@ -54,7 +51,6 @@ def login_view(request):
         return Response(serializer.data, status=status.HTTP_200_OK)
     return Response({"error": "Invalid Credentials"}, status=status.HTTP_400_BAD_REQUEST)
 
-# --- Game Views ---
 class GameViewSet(viewsets.ModelViewSet):
     queryset = Game.objects.all()
     serializer_class = GameSerializer

@@ -5,7 +5,6 @@ import random
 import json
 import os
 
-# --- High Score Manager ---
 class HighScoreManager:
     def __init__(self, filename="race21_highscore.json"):
         self.filename = filename
@@ -27,13 +26,12 @@ class HighScoreManager:
         except Exception as e:
             print(f"Error saving score: {e}")
 
-# --- Game Logic Class ---
 class RaceTo21(TwoPlayersGame):
     def __init__(self, players, difficulty="Hard"):
         self.players = players
         self.current_total = 0
         self.target = 21
-        self.current_player = 1  # 1 = Human, 2 = AI
+        self.current_player = 1  
         self.difficulty = difficulty
 
     def possible_moves(self):
@@ -53,10 +51,8 @@ class RaceTo21(TwoPlayersGame):
         return self.current_total == self.target
 
     def scoring(self):
-        # -100 if the opponent won (current player lost)
         return -100 if self.is_over() else 0
 
-# --- GUI Class ---
 class CasinoBlackjackGUI:
     def __init__(self, root):
         self.root = root
@@ -64,17 +60,14 @@ class CasinoBlackjackGUI:
         self.root.geometry("600x800")
         self.root.resizable(False, False)
         
-        # --- Managers ---
         self.hs_manager = HighScoreManager()
         self.high_score = self.hs_manager.load_score()
         
-        # --- Game State Variables ---
         self.wallet = 500
         self.current_bet = 0
         self.streak = 0
         self.ai_difficulty = "Hard" 
         
-        # --- Colors & Styles ---
         self.colors = {
             "felt": "#35654d",      
             "felt_dark": "#2a503d", 
@@ -89,13 +82,10 @@ class CasinoBlackjackGUI:
         
         self.root.configure(bg=self.colors["felt"])
 
-        # --- Menu Bar ---
         self.setup_menu()
 
-        # Initialize Game Logic Placeholder
         self.init_game_logic()
         
-        # Build UI
         self.setup_ui()
         self.update_stats_display()
         self.set_state_betting() 
@@ -136,7 +126,6 @@ class CasinoBlackjackGUI:
             messagebox.showwarning("Loan Denied", "You have enough funds!")
 
     def setup_ui(self):
-        # --- Top Info Bar (Stats) ---
         stats_frame = tk.Frame(self.root, bg=self.colors["wood"], pady=5, relief="ridge", bd=3)
         stats_frame.pack(fill="x")
         
@@ -146,16 +135,13 @@ class CasinoBlackjackGUI:
         self.lbl_highscore = tk.Label(stats_frame, text=f"BEST: ${self.high_score}", font=("Courier", 14, "bold"), bg=self.colors["wood"], fg=self.colors["text_gold"])
         self.lbl_highscore.pack(side="right", padx=15)
 
-        # --- Header ---
         tk.Label(self.root, text="BLACK JACK", font=("Times New Roman", 32, "bold"), bg=self.colors["felt"], fg=self.colors["text_gold"]).pack(pady=(15, 5))
         
-        # --- Game Log (New Feature) ---
         self.log_box = scrolledtext.ScrolledText(self.root, height=4, width=50, font=("Consolas", 9), bg=self.colors["action_log"], fg="#cfcfcf", bd=0)
         self.log_box.pack(pady=5)
         self.log_box.insert(tk.END, "Welcome to the High Stakes Table...\n")
         self.log_box.configure(state='disabled')
 
-        # --- The Table ---
         self.table_frame = tk.Frame(self.root, bg=self.colors["felt_dark"], bd=5, relief="sunken")
         self.table_frame.pack(pady=10, padx=40, fill="x")
 
@@ -170,11 +156,9 @@ class CasinoBlackjackGUI:
         self.lbl_status = tk.Label(self.root, text="Place your bet!", font=("Arial", 14, "italic"), bg=self.colors["felt"], fg="white")
         self.lbl_status.pack(pady=10)
 
-        # --- Controls Area ---
         self.controls_frame = tk.Frame(self.root, bg=self.colors["felt"])
         self.controls_frame.pack(side="bottom", fill="x", pady=20)
 
-        # 1. Betting Controls
         self.betting_frame = tk.Frame(self.controls_frame, bg=self.colors["felt"])
         
         tk.Label(self.betting_frame, text="PLACE YOUR WAGER", font=("Arial", 10, "bold"), bg=self.colors["felt"], fg="#ddd").pack(pady=5)
@@ -186,10 +170,8 @@ class CasinoBlackjackGUI:
         self.create_chip_btn(btn_row, 50, self.colors["chip_red"])
         self.create_chip_btn(btn_row, 100, self.colors["chip_black"])
         
-        # All In Button
         tk.Button(btn_row, text="ALL IN!", font=("Arial", 10, "bold"), bg="#d4ac0d", fg="black", width=10, command=self.go_all_in).pack(side="left", padx=10)
 
-        # 2. Playing Controls
         self.playing_frame = tk.Frame(self.controls_frame, bg=self.colors["felt"])
         
         tk.Label(self.playing_frame, text="ADD TO COUNT:", font=("Arial", 10, "bold"), bg=self.colors["felt"], fg="#ddd").pack(pady=5)
@@ -216,7 +198,6 @@ class CasinoBlackjackGUI:
                         command=lambda v=value: self.human_move(v))
         btn.pack()
 
-    # --- Helpers ---
     def log_action(self, message):
         self.log_box.configure(state='normal')
         self.log_box.insert(tk.END, f"> {message}\n")
@@ -228,7 +209,6 @@ class CasinoBlackjackGUI:
         self.lbl_highscore.config(text=f"BEST: ${self.high_score}")
         self.lbl_bet_display.config(text=f"BET: ${self.current_bet}")
 
-    # --- Game Flow ---
     def set_state_betting(self):
         self.playing_frame.pack_forget()
         self.betting_frame.pack()
@@ -237,7 +217,6 @@ class CasinoBlackjackGUI:
         self.current_bet = 0
         self.update_stats_display()
 
-        # Check for Game Over (Bankrupt)
         if self.wallet <= 0:
             response = messagebox.askyesno("Bankrupt!", "You have run out of money!\nTake a loan of $500 to continue?")
             if response:
@@ -279,7 +258,6 @@ class CasinoBlackjackGUI:
             
             if self.check_winner("Human"): return
 
-            # AI Turn
             self.game.switch_player()
             self.lbl_status.config(text="Dealer is thinking...", fg="#ffd700")
             self.root.update()
@@ -306,15 +284,13 @@ class CasinoBlackjackGUI:
             self.lbl_count.config(fg="#00ff00" if winner_name == "Human" else "#ff0000")
             
             if winner_name == "Human":
-                # Calculate Winnings
                 multiplier = 2
-                if self.streak >= 2: multiplier = 2.5 # Bonus for streaks
+                if self.streak >= 2: multiplier = 2.5 
                 
                 winnings = int(self.current_bet * multiplier)
                 self.wallet += winnings
                 self.streak += 1
                 
-                # Update High Score
                 if self.wallet > self.high_score:
                     self.high_score = self.wallet
                     self.hs_manager.save_score(self.high_score)

@@ -2,7 +2,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import api from "../services/api";
 
-// --- Constants & Config ---
 const CANVAS_SIZE = 600;
 const SCALE = 20;
 const POINTS_PER_FOOD = 10;
@@ -55,7 +54,6 @@ export default function SnakeGame({
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // --- State ---
   const [snake, setSnake] = useState([
     [10, 10],
     [9, 10],
@@ -70,16 +68,13 @@ export default function SnakeGame({
   const [paused, setPaused] = useState(false);
   const [running, setRunning] = useState(false);
 
-  // New state for the start delay
   const [countdown, setCountdown] = useState(0);
 
-  // --- Customization ---
   const [snakeColor, setSnakeColor] = useState("lime");
   const [bgColor, setBgColor] = useState("black");
   const [difficulty, setDifficulty] = useState("Medium");
   const [fruitShape, setFruitShape] = useState("Circle");
 
-  // Sound Effect
   const playBeep = (freq: number, duration: number) => {
     try {
       const audioCtx = new (window.AudioContext ||
@@ -130,7 +125,7 @@ export default function SnakeGame({
     setGameOver(false);
     setPaused(false);
     setRunning(true);
-    setCountdown(2); // Start the 2 second countdown
+    setCountdown(2); 
     setObstacles(generateItems(initialSnake, OBSTACLE_COUNT[difficulty]));
   };
 
@@ -145,7 +140,6 @@ export default function SnakeGame({
     }
   }, [score, gameName]);
 
-  // Countdown Logic
   useEffect(() => {
     if (countdown > 0 && running && !paused && !gameOver) {
       const timer = setTimeout(() => {
@@ -155,9 +149,7 @@ export default function SnakeGame({
     }
   }, [countdown, running, paused, gameOver]);
 
-  // Game Logic Loop
   useEffect(() => {
-    // Prevent movement if countdown is active
     if (!running || paused || gameOver || countdown > 0) return;
 
     const moveSnake = setInterval(() => {
@@ -219,7 +211,6 @@ export default function SnakeGame({
     countdown,
   ]);
 
-  // Drawing Logic
   useEffect(() => {
     const ctx = canvasRef.current?.getContext("2d");
     if (!ctx) return;
@@ -321,7 +312,6 @@ export default function SnakeGame({
     ctx.fill();
     ctx.stroke();
 
-    // Draw Countdown Overlay if active
     if (countdown > 0) {
       ctx.fillStyle = "rgba(0,0,0,0.5)";
       ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
@@ -333,7 +323,6 @@ export default function SnakeGame({
     }
   }, [snake, food, obstacles, bgColor, snakeColor, fruitShape, dir, countdown]);
 
-  // Input
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (
@@ -349,7 +338,6 @@ export default function SnakeGame({
       };
       if (e.key === " ") setPaused((p) => !p);
 
-      // Only allow input if countdown is not active
       if (countdown === 0 && keys[e.key]) {
         const newDir = keys[e.key];
         if (newDir[0] !== -dir[0] || newDir[1] !== -dir[1]) {

@@ -19,7 +19,6 @@ const MOLE_COLORS = [
   "#b482ff", "#ffe664", "#ffa050", "#8cd264"
 ];
 
-// --- Audio Helper (Fixed: Single Context) ---
 let audioCtx: AudioContext | null = null;
 
 const getAudioContext = () => {
@@ -32,7 +31,6 @@ const getAudioContext = () => {
   return audioCtx;
 };
 
-// Browsers block audio until user interaction. We call this on first click/key.
 const resumeAudioContext = () => {
   const ctx = getAudioContext();
   if (ctx && ctx.state === 'suspended') {
@@ -56,7 +54,7 @@ const playSound = (type: 'pop' | 'thud' | 'miss') => {
     osc.type = 'sine';
     osc.frequency.setValueAtTime(400, now);
     osc.frequency.linearRampToValueAtTime(800, now + 0.1);
-    gain.gain.setValueAtTime(0.5, now); // Lower volume slightly for overlap
+    gain.gain.setValueAtTime(0.5, now); 
     gain.gain.linearRampToValueAtTime(0, now + 0.1);
     osc.start(now);
     osc.stop(now + 0.1);
@@ -79,7 +77,6 @@ const playSound = (type: 'pop' | 'thud' | 'miss') => {
   }
 };
 
-// --- Game Logic Classes ---
 
 class Mole {
   number: number;
@@ -155,58 +152,48 @@ class Mole {
   }
 
   draw(ctx: CanvasRenderingContext2D, selectedColorIndex: number) {
-    // 1. Draw Hole (Background part)
     ctx.fillStyle = COLOR_HOLE;
     ctx.beginPath();
     ctx.ellipse(this.rect.x + 50, this.hole_y + 5, 60, 25, 0, 0, 2 * Math.PI);
     ctx.fill();
 
-    // 2. Set Clipping Region (Masking)
     ctx.save();
     ctx.beginPath();
     ctx.rect(0, 0, SCREEN_WIDTH, this.hole_y + 5);
     ctx.clip();
 
-    // 3. Draw Mole
     if (this.state !== 'hidden') {
       let color = MOLE_COLORS[selectedColorIndex];
       if (this.state === 'hit') color = COLOR_MOLE_HIT;
 
-      // Body (Ellipse centered at draw_y + 60)
       ctx.fillStyle = color;
       ctx.beginPath();
       ctx.ellipse(this.rect.x + 50, this.draw_y + 60, 50, 60, 0, 0, 2 * Math.PI);
       ctx.fill();
 
-      // --- VISUAL FIX: Facial features relative to draw_y ---
       const eye_y = this.draw_y + 40;
-      const nose_y = this.draw_y + 55;  // Moved relative to body
-      const mouth_y = this.draw_y + 65; // Moved relative to body
+      const nose_y = this.draw_y + 55;  
+      const mouth_y = this.draw_y + 65; 
 
       if (this.state !== 'hit') {
-        // Eyes
         ctx.fillStyle = "black";
         ctx.beginPath();
         ctx.arc(this.rect.x + 30, eye_y, 10, 0, Math.PI * 2);
         ctx.arc(this.rect.x + 70, eye_y, 10, 0, Math.PI * 2);
         ctx.fill();
 
-        // Eye glint
         ctx.fillStyle = "white";
         ctx.beginPath();
         ctx.arc(this.rect.x + 28, eye_y - 3, 3, 0, Math.PI * 2);
         ctx.arc(this.rect.x + 68, eye_y - 3, 3, 0, Math.PI * 2);
         ctx.fill();
 
-        // Mouth (Arc)
         ctx.strokeStyle = "black";
         ctx.lineWidth = 2;
         ctx.beginPath();
-        // Fixed: Using mouth_y instead of static rect.y
         ctx.arc(this.rect.x + 50, mouth_y, 10, 0, Math.PI, false); 
         ctx.stroke();
       } else {
-        // Dead Eyes (XX)
         ctx.strokeStyle = "#320000";
         ctx.lineWidth = 3;
         
@@ -221,31 +208,26 @@ class Mole {
         drawX(this.rect.x + 30, eye_y);
         drawX(this.rect.x + 70, eye_y);
 
-        // Ouch mouth
         ctx.fillStyle = "#320000";
         ctx.beginPath();
         ctx.arc(this.rect.x + 50, mouth_y, 6, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      // Nose
       ctx.fillStyle = "#ff8282";
       ctx.beginPath();
-      // Fixed: Using nose_y instead of static rect.y
       ctx.arc(this.rect.x + 50, nose_y, 8, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    ctx.restore(); // Remove Clip
+    ctx.restore(); 
 
-    // 4. Draw Hole Front Rim
     ctx.strokeStyle = "#64b43c"; 
     ctx.lineWidth = 10;
     ctx.beginPath();
     ctx.ellipse(this.rect.x + 50, this.hole_y + 5, 60, 25, 0, 0, Math.PI * 2); 
     ctx.stroke(); 
 
-    // 5. Key Hint Box
     ctx.fillStyle = "#4646b4"; 
     const boxX = this.rect.x + 35;
     const boxY = this.hole_y + 35;
@@ -270,7 +252,6 @@ interface MoleGameProps {
 const MoleGame: React.FC<MoleGameProps> = ({ currentHighScore, onClose, onUpdateHighScore }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
-  // Game State Refs
   const gameState = useRef<"MENU" | "PLAYING" | "GAMEOVER">("MENU");
   const score = useRef(0);
   const lives = useRef(3);
@@ -281,10 +262,8 @@ const MoleGame: React.FC<MoleGameProps> = ({ currentHighScore, onClose, onUpdate
   const interval = useRef(2500);
   const duration = useRef(2500);
   
-  // Buttons
   const btnStartRect = { x: (SCREEN_WIDTH - 200) / 2, y: 300, w: 200, h: 70 };
   
-  // Initialize Moles
   useEffect(() => {
     const layout = [[7, 8, 9], [4, 5, 6], [1, 2, 3]];
     const newMoles: Mole[] = [];
@@ -297,10 +276,8 @@ const MoleGame: React.FC<MoleGameProps> = ({ currentHighScore, onClose, onUpdate
     moles.current = newMoles;
   }, []);
 
-  // Handle Keyboard Input
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ensure audio context is running
       resumeAudioContext();
 
       if (gameState.current !== "PLAYING") return;
@@ -341,7 +318,6 @@ const MoleGame: React.FC<MoleGameProps> = ({ currentHighScore, onClose, onUpdate
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onUpdateHighScore]);
 
-  // Main Game Loop
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
@@ -352,7 +328,6 @@ const MoleGame: React.FC<MoleGameProps> = ({ currentHighScore, onClose, onUpdate
     const render = () => {
       const now = Date.now();
 
-      // --- Logic ---
       if (gameState.current === "PLAYING") {
         if (now > nextPopup.current) {
           let spawnCount = 1;
@@ -381,13 +356,10 @@ const MoleGame: React.FC<MoleGameProps> = ({ currentHighScore, onClose, onUpdate
         });
       }
 
-      // --- Drawing ---
       
-      // 1. Background
       ctx.fillStyle = COLOR_BG;
       ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-      // 2. UI Bar
       ctx.fillStyle = COLOR_UI_BAR;
       ctx.fillRect(0, 0, SCREEN_WIDTH, 90);
       ctx.strokeStyle = "#c8bece"; 
@@ -397,7 +369,6 @@ const MoleGame: React.FC<MoleGameProps> = ({ currentHighScore, onClose, onUpdate
       ctx.lineTo(SCREEN_WIDTH, 90);
       ctx.stroke();
 
-      // Score Text
       ctx.fillStyle = "#968c64";
       ctx.font = "bold 20px 'Comic Sans MS', sans-serif";
       ctx.fillText("SCORE", 25, 30);
@@ -405,7 +376,6 @@ const MoleGame: React.FC<MoleGameProps> = ({ currentHighScore, onClose, onUpdate
       ctx.font = "bold 40px 'Comic Sans MS', sans-serif";
       ctx.fillText(score.current.toString(), 25, 75);
 
-      // Lives
       ctx.fillStyle = "#968c64";
       ctx.font = "bold 20px 'Comic Sans MS', sans-serif";
       ctx.fillText("LIVES", SCREEN_WIDTH - 100, 30);
@@ -427,25 +397,20 @@ const MoleGame: React.FC<MoleGameProps> = ({ currentHighScore, onClose, onUpdate
         ctx.fill();
       }
 
-      // 3. Draw Moles
       moles.current.forEach(m => m.draw(ctx, selectedColorIndex.current));
 
-      // 4. Overlays
       if (gameState.current === "MENU") {
         ctx.fillStyle = "rgba(0, 0, 0, 0.55)";
         ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-        // Title
         ctx.fillStyle = "white";
         ctx.font = "bold 60px 'Comic Sans MS', sans-serif";
         const titleText = "WHACK-A-MOLE";
         const titleWidth = ctx.measureText(titleText).width;
         ctx.fillText(titleText, (SCREEN_WIDTH - titleWidth) / 2, 180);
 
-        // Play Button
         drawButton(ctx, btnStartRect, "PLAY");
 
-        // Color Picker
         ctx.font = "bold 28px 'Comic Sans MS', sans-serif";
         ctx.fillStyle = "#e6ffe6";
         const pkText = "Pick your mole color:";
@@ -513,7 +478,6 @@ const MoleGame: React.FC<MoleGameProps> = ({ currentHighScore, onClose, onUpdate
   };
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    // Ensure audio context is running on click
     resumeAudioContext();
 
     const canvas = canvasRef.current;
@@ -522,7 +486,6 @@ const MoleGame: React.FC<MoleGameProps> = ({ currentHighScore, onClose, onUpdate
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    // Button Logic
     const isBtnClicked = x >= btnStartRect.x && x <= btnStartRect.x + btnStartRect.w &&
                          y >= btnStartRect.y && y <= btnStartRect.y + btnStartRect.h;
 
@@ -535,7 +498,6 @@ const MoleGame: React.FC<MoleGameProps> = ({ currentHighScore, onClose, onUpdate
             moles.current.forEach(m => m.state = 'hidden');
             gameState.current = "PLAYING";
         }
-        // Color Picker Logic
         for (let i = 0; i < 8; i++) {
              const cx = (SCREEN_WIDTH - 320) / 2 + i * 40 + 15;
              const cy = 435 + 15;

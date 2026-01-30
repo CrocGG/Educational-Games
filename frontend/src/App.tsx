@@ -9,7 +9,6 @@ import NotFound from './components/NotFound';
 import AdminRoute from './components/AdminRoute';
 import Footer from './components/Footer';
 
-// --- Components ---
 
 const Navbar = () => {
     const { user, logout } = useAuth();
@@ -17,7 +16,7 @@ const Navbar = () => {
     return (
         <nav style={{ padding: '1rem', background: '#eee', display: 'flex', gap: '1rem', alignItems: 'center' }}>
             <Link to="/games">Games</Link>
-            {/* You can optionally hide this link if !user, but the route is now secure regardless */}
+            { }
             <Link to="/about">About</Link>
             
             <div style={{ marginLeft: 'auto', display: 'flex', gap: '1rem' }}>
@@ -43,7 +42,6 @@ const ProtectedRoute = () => {
     return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />;
 };
 
-// --- Main App ---
 
 export default function App() {
     return (
@@ -54,18 +52,18 @@ export default function App() {
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
                     
-                    {/* --- Protected Routes (Must be logged in) --- */}
+                    { }
                     <Route element={<ProtectedRoute />}>
-                        {/* 1. About is now protected */}
+                        { }
                         <Route path="/about" element={<About />} />
                         
-                        {/* 2. Games Routes updated for URL navigation */}
-                        {/* This matches /games (Hub) AND /games/Snaky-Snake (Specific Game) */}
+                        { }
+                        { }
                         <Route path="/games" element={<GamesHub />} />
                         <Route path="/games/:gameName" element={<GamesHub />} />
                     </Route>
 
-                    {/* --- Admin Protected Routes --- */}
+                    { }
                     <Route 
                         path="/manager" 
                         element={
@@ -75,7 +73,7 @@ export default function App() {
                         } 
                     />
 
-                    {/* --- Redirects & 404 --- */}
+                    { }
                     <Route path="/" element={<Navigate to="/games" replace />} />
                     <Route path="*" element={<NotFound />} />
                 </Routes>

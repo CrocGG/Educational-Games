@@ -7,10 +7,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-default-key')
 DEBUG = os.environ.get('DEBUG', 'True') != 'False'
 
-# In production, this should be your domain name (e.g., "example.com")
 ALLOWED_HOSTS = ["*"]
 
-# REQUIRED for Nginx Proxy: Django needs to trust the Nginx origin
 CSRF_TRUSTED_ORIGINS = ["http://localhost", "http://127.0.0.1"] 
 
 AUTH_USER_MODEL = 'base.Player'
@@ -99,7 +97,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'myproj.wsgi.application'
 
-# Database
 DB_ENGINE = os.environ.get('DB_ENGINE')
 
 if DB_ENGINE == 'django.db.backends.postgresql':
@@ -136,18 +133,12 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
-# Internationalization
-# https://docs.djangoproject.com/en/6.0/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# Static files
 STATIC_URL = '/static/'
-# This path must match the volume mapping in docker-compose for the backend
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIA_URL = '/media/'

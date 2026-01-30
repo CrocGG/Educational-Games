@@ -5,19 +5,16 @@ import math
 import os
 import struct
 
-# --- Initialization ---
-pygame.mixer.pre_init(44100, -16, 1, 512) # Pre-init for lower latency audio
+pygame.mixer.pre_init(44100, -16, 1, 512) 
 pygame.init()
 pygame.font.init()
 
-# --- Configuration ---
 WIDTH = 900
 HEIGHT = 700
 TITLE = "Beautiful Balloon"
 FPS = 60
 HIGHSCORE_FILE = "highscore.txt"
 
-# --- Colors ---
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 80, 80)
@@ -32,36 +29,27 @@ BALLOON_COLORS = [
     (255, 255, 100), (255, 100, 255), (100, 255, 255)
 ]
 
-# --- Setup Screen ---
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption(TITLE)
 clock = pygame.time.Clock()
 
-# --- Sound Generator (No external files needed) ---
 def generate_pop_sound():
-    """Generates a short white noise burst with decay to simulate a pop"""
-    duration = 0.1  # seconds
+    duration = 0.1  
     sample_rate = 44100
     num_samples = int(duration * sample_rate)
     
-    # Create a buffer for 16-bit audio
     audio_buffer = bytearray()
     
     for i in range(num_samples):
-        # Linear decay (fade out)
         envelope = 1.0 - (i / num_samples) 
-        # Random noise * envelope * volume
         noise = random.uniform(-1, 1)
         value = int(noise * envelope * 32767 * 0.5) 
-        # Pack as 16-bit signed integer (little endian)
         audio_buffer += struct.pack('<h', value)
         
     return pygame.mixer.Sound(buffer=audio_buffer)
 
-# Generate the sound once
 pop_sound = generate_pop_sound()
 
-# --- Fonts ---
 try:
     font_xl = pygame.font.SysFont("comicsansms", 80, bold=True)
     font_lg = pygame.font.SysFont("comicsansms", 50, bold=True)
@@ -73,7 +61,6 @@ except:
     font_md = pygame.font.SysFont("Arial", 30, bold=True)
     font_sm = pygame.font.SysFont("Arial", 20, bold=True)
 
-# --- Classes ---
 
 class Particle:
     def __init__(self, x, y, color):
@@ -259,7 +246,7 @@ class GameManager:
                 break
         
         if clicked_balloon:
-            pop_sound.play() # Play the generated sound
+            pop_sound.play() 
             self.create_explosion(clicked_balloon.x, clicked_balloon.y, clicked_balloon.color)
             
             if clicked_balloon.number == self.correct_answer:
@@ -275,7 +262,6 @@ class GameManager:
 
     def update(self):
         if self.state == "PLAYING":
-            # Iterate over a COPY of the list [:] to safely remove items
             for b in self.balloons[:]: 
                 b.move()
                 if b.y < -50:
@@ -310,7 +296,6 @@ class GameManager:
             title = font_xl.render("Beautiful Balloon", True, WHITE)
             sub = font_md.render("Pop the correct balloon!", True, (200, 200, 200))
             
-            # Show High Score
             hs_text = font_md.render(f"High Score: {self.high_score}", True, GOLD)
             
             t_rect = title.get_rect(center=(WIDTH//2, HEIGHT//2 - 100))
@@ -351,23 +336,16 @@ class GameManager:
             screen.blit(hs_final, h_rect)
             self.btn_restart.draw(screen)
 
-# --- Main Execution ---
 game = GameManager()
 running = True
 
 while running:
-    # 1. Logic Update (Movements, calculations)
     game.update()
 
-    # 2. Event Handling (Input)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        
-        # We use an if/elif chain here. This ensures that if the state changes 
-        # from PLAYING to GAMEOVER during this frame, the GAMEOVER code 
-        # won't run until the NEXT frame, preventing the "ghost click."
-        
+
         if game.state == "MENU":
             game.btn_start.check_input(event)
 
@@ -378,7 +356,6 @@ while running:
         elif game.state == "GAMEOVER":
             game.btn_restart.check_input(event)
 
-    # 3. Drawing
     game.draw()
     pygame.display.flip()
     clock.tick(FPS)

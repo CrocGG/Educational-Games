@@ -4,7 +4,6 @@ import threading
 import platform
 import os
 
-# Check OS for sound compatibility
 system_platform = platform.system()
 if system_platform == "Windows":
     import winsound
@@ -37,7 +36,6 @@ class SnakeGame:
         self.root.geometry(f"{WIDTH}x{HEIGHT + 150}")
         self.root.resizable(False, False)
         
-        # Game State
         self.snake = [(300, 300), (280, 300), (260, 300)]
         self.direction = "Right"
         self.next_direction = "Right"
@@ -48,7 +46,7 @@ class SnakeGame:
         self.score = 0
         self.high_score = self.load_high_score()
         
-        # --- Customization Variables ---
+
         self.snake_color = tk.StringVar(value="lime green")
         self.bg_color = tk.StringVar(value="black")
         self.food_shape = tk.StringVar(value="Circle")
@@ -67,7 +65,6 @@ class SnakeGame:
         self.root.mainloop()
 
     def load_high_score(self):
-        """Reads high score from a local text file."""
         if not os.path.exists(HIGHSCORE_FILE):
             return 0
         try:
@@ -77,7 +74,6 @@ class SnakeGame:
             return 0
 
     def save_high_score(self):
-        """Writes new high score to a local text file."""
         try:
             with open(HIGHSCORE_FILE, "w") as f:
                 f.write(str(self.high_score))
@@ -85,11 +81,9 @@ class SnakeGame:
             print(f"Error saving high score: {e}")
 
     def setup_ui(self):
-        # Game Area
         self.canvas = tk.Canvas(self.root, width=WIDTH, height=HEIGHT, bg="black", highlightthickness=0)
         self.canvas.pack(pady=10)
 
-        # Control Frame
         self.top_frame = tk.Frame(self.root)
         self.top_frame.pack(fill="x", pady=5)
         
@@ -102,11 +96,9 @@ class SnakeGame:
         self.restart_btn = tk.Button(self.top_frame, text="Restart", command=self.restart_game, state="disabled", bg="#dddddd")
         self.restart_btn.pack(side="left", expand=True, padx=5)
 
-        # Customization Panel
         self.bottom_frame = tk.Frame(self.root)
         self.bottom_frame.pack(fill="x", pady=5)
         
-        # Grid layout for options
         tk.Label(self.bottom_frame, text="Snake Color:").grid(row=0, column=0, padx=5)
         tk.OptionMenu(self.bottom_frame, self.snake_color, *SNAKE_COLORS).grid(row=0, column=1, padx=5)
 
@@ -125,7 +117,6 @@ class SnakeGame:
         self.update_score_display()
 
     def play_sound(self, freq, duration):
-        """Cross-platform sound wrapper"""
         if system_platform == "Windows":
             threading.Thread(target=lambda: winsound.Beep(freq, duration), daemon=True).start()
 
@@ -135,7 +126,6 @@ class SnakeGame:
             x = random.randint(0, (WIDTH-SIZE)//SIZE) * SIZE
             y = random.randint(0, (HEIGHT-SIZE)//SIZE) * SIZE
             
-            # Ensure food doesn't spawn on snake or obstacles
             if (x, y) not in self.snake and (x, y) not in self.obstacles:
                 break
         
@@ -169,7 +159,6 @@ class SnakeGame:
         
         new_head = (x, y)
 
-        # Collision Check: Walls, Self, Obstacles
         if (x < 0 or x >= WIDTH or y < 0 or y >= HEIGHT or 
             new_head in self.snake or new_head in self.obstacles):
             self.game_over()
@@ -177,7 +166,6 @@ class SnakeGame:
 
         self.snake.insert(0, new_head)
         
-        # Check Food Collision using overlap
         overlap = self.canvas.find_overlapping(x+1, y+1, x+SIZE-1, y+SIZE-1)
         is_eating = False
         for item in overlap:
@@ -205,7 +193,6 @@ class SnakeGame:
             self.canvas.delete("all")
             self.canvas.config(bg=self.bg_color.get())
             
-            # Reset State
             self.snake = [(300, 300), (280, 300), (260, 300)]
             self.direction = "Right"
             self.next_direction = "Right"
@@ -226,7 +213,6 @@ class SnakeGame:
     def game_over(self):
         self.running = False
         
-        # Check for High Score update
         if self.score > self.high_score:
             self.high_score = self.score
         
@@ -247,14 +233,13 @@ class SnakeGame:
         self.canvas.delete("snake")
         
         for i, seg in enumerate(self.snake):
-            if i == 0:  # The Head
+            if i == 0: 
                 head_color = "white" if self.snake_color.get() != "white" else "yellow"
                 self.canvas.create_rectangle(
                     seg[0], seg[1], seg[0]+SIZE, seg[1]+SIZE, 
                     fill=head_color, outline="black", width=2, tag="snake"
                 )
                 
-                # --- Draw the Tongue ---
                 t_color = "red"
                 x, y = seg[0], seg[1]
                 if self.direction == "Up":
@@ -274,12 +259,11 @@ class SnakeGame:
                     self.canvas.create_line(x+SIZE+8, y+SIZE/2, x+SIZE+11, y+SIZE/2-3, fill=t_color, width=2, tag="snake")
                     self.canvas.create_line(x+SIZE+8, y+SIZE/2, x+SIZE+11, y+SIZE/2+3, fill=t_color, width=2, tag="snake")
 
-                # --- Draw the Eyes ---
                 eye_size = 4
                 self.canvas.create_oval(seg[0]+4, seg[1]+4, seg[0]+4+eye_size, seg[1]+4+eye_size, fill="black", tag="snake")
                 self.canvas.create_oval(seg[0]+SIZE-8, seg[1]+4, seg[0]+SIZE-8+eye_size, seg[1]+4+eye_size, fill="black", tag="snake")
             
-            else:  # The Body
+            else: 
                 self.canvas.create_rectangle(
                     seg[0], seg[1], seg[0]+SIZE, seg[1]+SIZE, 
                     fill=self.snake_color.get(), outline="black", tag="snake"
@@ -318,7 +302,6 @@ class SnakeGame:
         opposites = {"Up": "Down", "Down": "Up", "Left": "Right", "Right": "Left"}
         
         if new_dir in all_dirs:
-            # Prevent reversing direction directly based on current movement
             if new_dir != opposites.get(self.direction):
                 self.next_direction = new_dir
 

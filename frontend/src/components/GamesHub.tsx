@@ -15,12 +15,9 @@ export default function GamesHub() {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // 1. Get the gameName from the URL (if it exists)
   const { gameName } = useParams();
   const navigate = useNavigate();
 
-  // 2. Derive the active game from the URL param instead of local state
-  // If gameName is undefined, activeGame is null (showing the list)
   const activeGame = games.find(g => g.name === gameName) || null;
 
   useEffect(() => {
@@ -119,7 +116,6 @@ export default function GamesHub() {
       </div>
     );
 
-  // 4. Render the Active Game based on the URL match
   if (activeGame) {
     if (activeGame.name === "Snaky-Snake") {
       return (
@@ -250,7 +246,6 @@ export default function GamesHub() {
             <div key={game.id} className="game-card-wrapper">
               <button
                 style={cardStyle}
-                // 5. Update click to navigate to the game URL
                 onClick={() => navigate(`/games/${game.name}`)}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = "translateY(-4px)";

@@ -1,11 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../services/api'; // Use your centralized api service
+import api from '../services/api'; 
 
 export default function Register() {
     const navigate = useNavigate();
     
-    // 1. State for form data
     const [formData, setFormData] = useState({
         username: '',
         email: '',
@@ -16,7 +16,6 @@ export default function Register() {
     const [error, setError] = useState<string>('');
     const [loading, setLoading] = useState(false);
 
-    // 2. Handle input changes
     const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
         setFormData({
             ...formData,
@@ -24,7 +23,6 @@ export default function Register() {
         });
     };
 
-    // 3. Handle form submission
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         setMessage('');
@@ -32,20 +30,16 @@ export default function Register() {
         setLoading(true);
 
         try {
-            // Use the 'api' instance instead of axios directly
             await api.post('/register/', formData);
 
             setMessage('Registration successful! Redirecting to login...');
             
-            // Optional: Redirect after 2 seconds
             setTimeout(() => {
                 navigate('/login');
             }, 2000);
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (err: any) {
             console.error(err);
-            // Try to extract the specific error message from Django
             const errorMsg = err.response?.data?.detail 
                 || err.response?.data?.username?.[0] 
                 || 'An error occurred during registration.';
@@ -61,7 +55,7 @@ export default function Register() {
                 <h2>Join the Party</h2>
                 <p>Register if you are not a part of the party yet!</p>
                 
-                {/* Success Message */}
+                { }
                 {message && (
                     <div style={{ 
                         color: '#155724', 
@@ -75,7 +69,7 @@ export default function Register() {
                     </div>
                 )}
 
-                {/* Error Message */}
+                { }
                 {error && (
                     <div style={{ 
                         color: '#721c24', 

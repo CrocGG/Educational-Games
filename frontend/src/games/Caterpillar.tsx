@@ -2,7 +2,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useRef, useState, useCallback } from "react";
 
-// --- SOUND GENERATOR (Web Audio API) ---
 const useSoundGenerator = () => {
   const [audioCtx, setAudioCtx] = useState<AudioContext | null>(null);
 
@@ -56,12 +55,11 @@ const useSoundGenerator = () => {
   return { playCrunch, playMagic };
 };
 
-// --- TYPES ---
 interface CaterpillarGameProps {
   gameName: string;
-  currentHighScore: number; // This comes from the DB (Global High Score)
+  currentHighScore: number; 
   onClose: () => void;
-  onUpdateHighScore: (score: number) => void; // Connects to GamesHub submit function
+  onUpdateHighScore: (score: number) => void; 
 }
 
 type GamePhase = "feeding" | "cocoon" | "butterfly";
@@ -71,30 +69,23 @@ export default function CaterpillarGame({
   onClose,
   onUpdateHighScore,
 }: CaterpillarGameProps) {
-  // --- STATE ---
   const [leavesLeft, setLeavesLeft] = useState(10);
 
-  // FIX: Start current session score at 0, not the high score
   const [butterfliesFreed, setButterfliesFreed] = useState(0);
 
   const [gamePhase, setGamePhase] = useState<GamePhase>("feeding");
   const [message, setMessage] = useState("Help the caterpillar eat breakfast!");
 
-  // Canvas Ref
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // FIX: Initialize useRef with 0 to solve TypeScript error
   const animationRef = useRef<number>(0);
 
-  // Sound
   const { playCrunch, playMagic } = useSoundGenerator();
 
-  // Constants
   const TOTAL_LEAVES = 10;
   const CANVAS_WIDTH = 700;
   const CANVAS_HEIGHT = 400;
 
-  // --- DRAWING LOGIC ---
   const drawScene = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -113,7 +104,6 @@ export default function CaterpillarGame({
   }, [leavesLeft, gamePhase]);
 
   const drawFeedingStage = (ctx: CanvasRenderingContext2D) => {
-    // Branch
     ctx.beginPath();
     ctx.moveTo(50, 300);
     ctx.lineTo(650, 300);
@@ -122,7 +112,6 @@ export default function CaterpillarGame({
     ctx.lineCap = "round";
     ctx.stroke();
 
-    // Leaves
     const startX = 600;
     for (let i = 0; i < leavesLeft; i++) {
       const x = startX - i * 50;
@@ -143,7 +132,6 @@ export default function CaterpillarGame({
       ctx.stroke();
     }
 
-    // Caterpillar
     const eatenCount = TOTAL_LEAVES - leavesLeft;
     const segments = 3 + eatenCount;
     const headX = 100 + segments * 35;
@@ -162,7 +150,6 @@ export default function CaterpillarGame({
       ctx.stroke();
     }
 
-    // Head
     ctx.beginPath();
     ctx.ellipse(headX + 17.5, 297.5, 22.5, 22.5, 0, 0, 2 * Math.PI);
     ctx.fillStyle = "#F44336";
@@ -170,7 +157,6 @@ export default function CaterpillarGame({
     ctx.strokeStyle = "#B71C1C";
     ctx.stroke();
 
-    // Eyes & Smile
     ctx.fillStyle = "black";
     ctx.beginPath();
     ctx.arc(headX + 27, 287, 2.5, 0, 2 * Math.PI);
@@ -218,7 +204,6 @@ export default function CaterpillarGame({
     });
   };
 
-  // --- BUTTERFLY ANIMATION ---
   const animateButterfly = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -241,7 +226,6 @@ export default function CaterpillarGame({
       ctx.strokeStyle = "white";
       ctx.fillStyle = "#E040FB";
 
-      // Wings
       ctx.beginPath();
       ctx.moveTo(bfX, bfY);
       ctx.lineTo(bfX - wingW, bfY - 60);
@@ -258,7 +242,6 @@ export default function CaterpillarGame({
       ctx.fill();
       ctx.stroke();
 
-      // Body
       ctx.fillStyle = "#4A148C";
       ctx.beginPath();
       ctx.ellipse(bfX, bfY, 8, 40, 0, 0, 2 * Math.PI);
@@ -281,7 +264,6 @@ export default function CaterpillarGame({
     renderFrame();
   }, []);
 
-  // --- GAME LOGIC ---
   const feedCaterpillar = (amount: number) => {
     if (gamePhase !== "feeding") return;
 
@@ -316,11 +298,9 @@ export default function CaterpillarGame({
     setMessage("✨ WOW! A Butterfly! ✨");
     playMagic();
 
-    // 1. Calculate new Score
     const newScore = butterfliesFreed + 1;
     setButterfliesFreed(newScore);
 
-    // 2. Send to Backend (GamesHub will handle the logic of "is this a high score?")
     onUpdateHighScore(newScore);
 
     animateButterfly();
@@ -338,7 +318,6 @@ export default function CaterpillarGame({
     }
   }, [leavesLeft, gamePhase, drawScene]);
 
-  // Cleanup animation on unmount
   useEffect(() => {
     return () => {
       if (animationRef.current) {
@@ -347,7 +326,6 @@ export default function CaterpillarGame({
     }
   }, []);
 
-  // --- STYLES ---
   const containerStyle: React.CSSProperties = {
     backgroundColor: "#81C784",
     width: "800px",

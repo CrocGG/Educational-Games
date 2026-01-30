@@ -8,14 +8,14 @@ export interface Game {
 }
 
 export interface Player {
-    id: string; // Changed to string for UUID
+    id: string; 
     username: string;
-    email: string; // Added email as it's now unique/required
-    is_admin?: boolean; // Helpful for conditional rendering in the UI
+    email: string; 
+    is_admin?: boolean; 
 }
 
 export interface AuthResponse {
-    access: string; // JWT Access token
-    refresh: string; // JWT Refresh token
-    user: Player;    // Better practice to return the whole user object
+    access: string; 
+    refresh: string; 
+    user: Player;    
 }

@@ -1,7 +1,7 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useRef } from "react";
 
-// --- Types ---
 interface BalloonGameProps {
   gameName: string;
   currentHighScore: number;
@@ -14,11 +14,9 @@ interface Point {
   y: number;
 }
 
-// --- Configuration ---
 const WIDTH = 900;
 const HEIGHT = 700;
 
-// --- Colors ---
 const WHITE = "rgb(255, 255, 255)";
 const RED = "rgb(255, 80, 80)";
 const GOLD = "rgb(255, 215, 0)";
@@ -36,8 +34,6 @@ const BALLOON_COLORS = [
   "rgb(100, 255, 255)",
 ];
 
-// --- Audio Generator ---
-// We lazily initialize audio context to handle browser autoplay policies
 const audioCtxRef = { current: null as AudioContext | null };
 
 const playPopSound = () => {
@@ -55,9 +51,7 @@ const playPopSound = () => {
   const data = buffer.getChannelData(0);
 
   for (let i = 0; i < bufferSize; i++) {
-    // Linear decay envelope
     const envelope = 1.0 - i / bufferSize;
-    // Random noise * envelope * volume
     const noise = Math.random() * 2 - 1;
     data[i] = noise * envelope * 0.5;
   }
@@ -68,7 +62,6 @@ const playPopSound = () => {
   source.start();
 };
 
-// --- Game Classes (Converted to TS Classes) ---
 
 class Particle {
   x: number;
@@ -83,9 +76,9 @@ class Particle {
     this.x = x;
     this.y = y;
     this.color = color;
-    this.radius = Math.floor(Math.random() * 5) + 3; // 3-7
-    this.life = Math.floor(Math.random() * 21) + 20; // 20-40
-    this.vx = Math.random() * 6 - 3; // -3 to 3
+    this.radius = Math.floor(Math.random() * 5) + 3; 
+    this.life = Math.floor(Math.random() * 21) + 20; 
+    this.vx = Math.random() * 6 - 3; 
     this.vy = Math.random() * 6 - 3;
   }
 
@@ -137,14 +130,12 @@ class Balloon {
   move() {
     this.y -= this.baseSpeed;
     const timeTick = Date.now();
-    // Simulate pygame.time.get_ticks() roughly
     this.x =
       this.startX +
       Math.sin(timeTick * 0.005 + this.frameOffset) * this.wobbleAmp;
   }
 
   draw(ctx: CanvasRenderingContext2D) {
-    // String
     ctx.beginPath();
     ctx.moveTo(this.x, this.y + this.radius);
     ctx.lineTo(this.x, this.y + this.radius + 40);
@@ -152,26 +143,22 @@ class Balloon {
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    // Balloon Body
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
     ctx.fillStyle = this.color;
     ctx.fill();
 
-    // Shine
     ctx.beginPath();
     ctx.arc(this.x - 15, this.y - 15, 10, 0, Math.PI * 2);
     ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
     ctx.fill();
 
-    // Text Shadow
     ctx.font = "bold 30px 'Comic Sans MS', 'Arial', sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillStyle = "rgb(50, 50, 50)";
     ctx.fillText(this.number.toString(), this.x + 2, this.y + 2);
 
-    // Text Main
     ctx.fillStyle = WHITE;
     ctx.fillText(this.number.toString(), this.x, this.y);
   }
@@ -216,7 +203,6 @@ class Button {
 
   draw(ctx: CanvasRenderingContext2D) {
     ctx.beginPath();
-    // Helper for rounded rect
     const r = 12;
     ctx.moveTo(this.x + r, this.y);
     ctx.arcTo(this.x + this.w, this.y, this.x + this.w, this.y + this.h, r);
@@ -253,8 +239,6 @@ class Button {
   }
 }
 
-// --- Main Game Component ---
-
 export default function BalloonGame({
   currentHighScore,
   onClose,
@@ -262,8 +246,6 @@ export default function BalloonGame({
 }: BalloonGameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // We use a ref to hold the game state to modify it inside the requestAnimationFrame loop
-  // without triggering React renders.
   const gameState = useRef({
     state: "MENU" as "MENU" | "PLAYING" | "GAMEOVER",
     score: 0,
@@ -276,7 +258,6 @@ export default function BalloonGame({
     buttons: [] as Button[],
   });
 
-  // Setup Buttons (initialized once)
   useEffect(() => {
     const startBtn = new Button(
       WIDTH / 2 - 100,
@@ -301,7 +282,6 @@ export default function BalloonGame({
     );
 
     gameState.current.buttons = [startBtn, restartBtn];
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const generateQuestion = () => {
@@ -332,8 +312,8 @@ export default function BalloonGame({
       state.correctAnswer = n1 * n2;
       state.question = `${n1} x ${n2} = ?`;
     } else if (op === "/") {
-      num2 = Math.floor(Math.random() * 7) + 2; // 2-8
-      const ans = Math.floor(Math.random() * 9) + 2; // 2-10
+      num2 = Math.floor(Math.random() * 7) + 2; 
+      const ans = Math.floor(Math.random() * 9) + 2; 
       num1 = num2 * ans;
       state.correctAnswer = ans;
       state.question = `${num1} / ${num2} = ?`;
@@ -359,7 +339,6 @@ export default function BalloonGame({
       }
     }
 
-    // Shuffle
     for (let i = answers.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [answers[i], answers[j]] = [answers[j], answers[i]];
@@ -395,20 +374,14 @@ export default function BalloonGame({
 
   const saveHighScore = () => {
     const state = gameState.current;
-    // We send the score if it matches the current session best
-    // The Backend will decide if it beats the Global World Record
     if (state.score > state.highScore) {
       state.highScore = state.score;
-      // This triggers the API call in GamesHub
       onUpdateHighScore(state.highScore);
     } else {
-      // OPTIONAL: If you want to submit the score even if it's not
-      // a session high score (to check against global), uncomment this:
       // onUpdateHighScore(state.score);
     }
   };
 
-  // --- Input Handling ---
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!canvasRef.current) return;
     const rect = canvasRef.current.getBoundingClientRect();
@@ -418,13 +391,12 @@ export default function BalloonGame({
     };
     const state = gameState.current;
 
-    // Initialize Audio context on first interaction if needed
     if (!audioCtxRef.current) playPopSound();
 
     if (state.state === "MENU") {
-      state.buttons[0].checkClick(); // Start button
+      state.buttons[0].checkClick(); 
     } else if (state.state === "GAMEOVER") {
-      state.buttons[1].checkClick(); // Restart button
+      state.buttons[1].checkClick(); 
     } else if (state.state === "PLAYING") {
       let clickedBalloon: Balloon | null = null;
       for (const b of state.balloons) {
@@ -448,7 +420,6 @@ export default function BalloonGame({
         } else {
           state.lives -= 1;
           if (state.lives <= 0) {
-            // 1. This calculates if we beat the current session high score
             saveHighScore();
             state.state = "GAMEOVER";
           } else {
@@ -475,7 +446,6 @@ export default function BalloonGame({
     }
   };
 
-  // --- Game Loop (Draw & Update) ---
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
@@ -484,7 +454,6 @@ export default function BalloonGame({
     let animationFrameId: number;
 
     const drawGradientBackground = () => {
-      // Draw vertical lines to simulate gradient as per python script
       for (let y = 0; y < HEIGHT; y++) {
         const ratio = 1 - y / HEIGHT;
         const ratioInv = y / HEIGHT;
@@ -501,28 +470,22 @@ export default function BalloonGame({
     const render = () => {
       const state = gameState.current;
 
-      // 1. Draw Background
       drawGradientBackground();
 
-      // 2. Draw Particles (Persist across states)
       for (const p of state.particles) {
         p.draw(ctx);
       }
 
-      // 3. Logic & Drawing based on State
       if (state.state === "MENU") {
-        // Title
         ctx.fillStyle = WHITE;
         ctx.font = "bold 80px 'Comic Sans MS', 'Arial'";
         ctx.textAlign = "center";
         ctx.fillText("Beautiful Balloon", WIDTH / 2, HEIGHT / 2 - 100);
 
-        // Subtitle
         ctx.fillStyle = "rgb(200, 200, 200)";
         ctx.font = "bold 30px 'Comic Sans MS', 'Arial'";
         ctx.fillText("Pop the correct balloon!", WIDTH / 2, HEIGHT / 2 - 20);
 
-        // High Score
         ctx.fillStyle = GOLD;
         ctx.fillText(
           `High Score: ${state.highScore}`,
@@ -530,10 +493,8 @@ export default function BalloonGame({
           HEIGHT / 2 + 130
         );
 
-        // Start Button
         state.buttons[0].draw(ctx);
       } else if (state.state === "PLAYING") {
-        // UI Header
         ctx.fillStyle = UI_BG;
         ctx.fillRect(0, 0, WIDTH, 80);
         ctx.beginPath();
@@ -543,7 +504,6 @@ export default function BalloonGame({
         ctx.lineWidth = 2;
         ctx.stroke();
 
-        // Stats
         ctx.font = "bold 30px 'Comic Sans MS', 'Arial'";
         ctx.textAlign = "left";
         ctx.fillStyle = "rgb(255, 255, 100)";
@@ -553,14 +513,11 @@ export default function BalloonGame({
         ctx.fillStyle = "rgb(255, 100, 100)";
         ctx.fillText(`Lives: ${state.lives}`, WIDTH - 20, 50);
 
-        // Question
         ctx.textAlign = "center";
         ctx.font = "bold 50px 'Comic Sans MS', 'Arial'";
         ctx.fillStyle = "rgb(100, 255, 255)";
         ctx.fillText(state.question, WIDTH / 2, 55);
 
-        // Update & Draw Balloons
-        // Loop backwards to allow removal
         for (let i = state.balloons.length - 1; i >= 0; i--) {
           const b = state.balloons[i];
           b.move();
@@ -581,18 +538,15 @@ export default function BalloonGame({
           }
         }
       } else if (state.state === "GAMEOVER") {
-        // Title
         ctx.fillStyle = RED;
         ctx.font = "bold 80px 'Comic Sans MS', 'Arial'";
         ctx.textAlign = "center";
         ctx.fillText("GAME OVER", WIDTH / 2, HEIGHT / 2 - 120);
 
-        // Final Score
         ctx.fillStyle = WHITE;
         ctx.font = "bold 50px 'Comic Sans MS', 'Arial'";
         ctx.fillText(`Score: ${state.score}`, WIDTH / 2, HEIGHT / 2 - 40);
 
-        // High Score
         ctx.fillStyle = GOLD;
         ctx.font = "bold 30px 'Comic Sans MS', 'Arial'";
         ctx.fillText(
@@ -601,11 +555,9 @@ export default function BalloonGame({
           HEIGHT / 2 + 10
         );
 
-        // Restart Button
         state.buttons[1].draw(ctx);
       }
 
-      // Update Particles
       for (let i = state.particles.length - 1; i >= 0; i--) {
         const p = state.particles[i];
         p.update();
@@ -622,8 +574,7 @@ export default function BalloonGame({
     return () => {
       window.cancelAnimationFrame(animationFrameId);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty dependency array creates the loop once
+  }, []); 
 
   return (
     <div style={{ textAlign: "center", marginTop: "20px" }}>

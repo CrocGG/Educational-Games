@@ -2,7 +2,6 @@
 /* eslint-disable prefer-const */
 import React, { useState, useEffect, useRef } from "react";
 
-// --- Types ---
 interface BlackjackProps {
   gameName: string;
   currentHighScore: number;
@@ -13,7 +12,6 @@ interface BlackjackProps {
 type Difficulty = "Easy" | "Hard";
 type GameState = "betting" | "playing" | "gameover";
 
-// --- Constants (Matching Python Colors) ---
 const COLORS = {
   felt: "#35654d",
   felt_dark: "#2a503d",
@@ -31,7 +29,6 @@ export default function BlackjackGame({
   onClose,
   onUpdateHighScore,
 }: BlackjackProps) {
-  // --- State ---
   const [wallet, setWallet] = useState(500);
   const [currentBet, setCurrentBet] = useState(0);
   const [streak, setStreak] = useState(0);
@@ -44,16 +41,12 @@ export default function BlackjackGame({
   
   const logBoxRef = useRef<HTMLDivElement>(null);
 
-  // --- Effects ---
-  
-  // Auto-scroll logs
   useEffect(() => {
     if (logBoxRef.current) {
       logBoxRef.current.scrollTop = logBoxRef.current.scrollHeight;
     }
   }, [logs]);
 
-  // AI Turn Handler
   useEffect(() => {
     if (gameState === "playing" && !isPlayerTurn) {
       const timer = setTimeout(() => {
@@ -62,8 +55,6 @@ export default function BlackjackGame({
       return () => clearTimeout(timer);
     }
   }, [isPlayerTurn, gameState]);
-
-  // --- Helpers ---
 
   const addLog = (msg: string) => {
     setLogs((prev) => [...prev, `> ${msg}`]);
@@ -100,8 +91,6 @@ export default function BlackjackGame({
     return false;
   };
 
-  // --- Game Logic (Race to 21) ---
-
   const getPossibleMoves = (total: number) => {
     const remaining = 21 - total;
     const limit = Math.min(3, remaining);
@@ -125,17 +114,12 @@ export default function BlackjackGame({
     let move = 1;
 
     if (difficulty === "Easy" && Math.random() < 0.4) {
-      // Random move
       addLog("Dealer looks distracted...");
       move = possible[Math.floor(Math.random() * possible.length)];
     } else {
-      // Optimal Strategy for Race to 21 (Nim)
-      // Winning positions are 1, 5, 9, 13, 17, 21 (Target 21, mod 4)
-      // We want to land on a number X where (X - 1) % 4 == 0
       
       let foundWinningMove = false;
       
-      // Try to find a move that lands us on a winning number
       for (let m of possible) {
         if ((currentTotal + m - 1) % 4 === 0) {
           move = m;
@@ -144,7 +128,6 @@ export default function BlackjackGame({
         }
       }
 
-      // If no winning move exists (we are in a losing position), play randomly/conservatively
       if (!foundWinningMove) {
         move = possible[Math.floor(Math.random() * possible.length)];
       }
@@ -158,8 +141,6 @@ export default function BlackjackGame({
       setIsPlayerTurn(true);
     }
   };
-
-  // --- Betting System ---
 
   const placeBet = (amount: number) => {
     if (wallet < amount) {
@@ -203,8 +184,6 @@ export default function BlackjackGame({
     setCurrentTotal(0);
   };
 
-  // --- Render ---
-
   return (
     <div
       style={{
@@ -222,7 +201,7 @@ export default function BlackjackGame({
         alignItems: "center",
       }}
     >
-      {/* Top Menu Bar */}
+      { }
       <div
         style={{
           width: "100%",
@@ -417,7 +396,6 @@ export default function BlackjackGame({
   );
 }
 
-// --- Styles ---
 
 const menuBtnStyle: React.CSSProperties = {
   background: "transparent",

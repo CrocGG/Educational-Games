@@ -7,11 +7,6 @@ import random
 import os
 import platform
 
-# ==========================================
-# IMAGE LIBRARY IMPORT (SAFE MODE)
-# ==========================================
-# We try to import PIL (Pillow) to handle image flipping.
-# If the user doesn't have it installed, we fall back to standard Tkinter (no flip).
 HAS_PIL = False
 try:
     from PIL import Image, ImageTk, ImageOps
@@ -21,12 +16,9 @@ except ImportError:
 
 def fix_rtl(text):
     if not text: return ""
-    # Adds the RTL mark to every line to force punctuation to the left (the end)
     return "\n".join([str(line) + "\u200f" for line in text.split("\n")])
 
-# ==========================================
-# CONFIGURATION
-# ==========================================
+
 WIDTH = 800
 HEIGHT = 600
 GRAVITY = 0.8
@@ -35,9 +27,7 @@ SPEED = 8
 FRAME_RATE = 16
 HIGH_SCORE_FILE = "highscore.txt"
 
-# ==========================================
-# SOUND MANAGER
-# ==========================================
+
 system_platform = platform.system()
 
 def play_sound(sound_type):
@@ -61,9 +51,7 @@ def play_sound(sound_type):
     except Exception:
         pass
 
-# ==========================================
-# CSV PARSER
-# ==========================================
+
 def load_questions():
     questions = []
     try:
@@ -87,9 +75,6 @@ def load_questions():
         ]
     return questions
 
-# ==========================================
-# GAME CLASSES
-# ==========================================
 
 class Particle:
     def __init__(self, x, y):
@@ -124,16 +109,13 @@ class KangarooGame:
         self.root.title("קנגורו - מאת גולן גלנט")
         self.root.resizable(False, False)
         
-        # --- Layout Setup ---
         self.main_frame = tk.Frame(root, bg="#2c3e50")
         self.main_frame.pack(fill=tk.BOTH, expand=True)
 
-        # Sideboard
         self.sideboard = tk.Frame(self.main_frame, width=250, bg="#333", bd=4, relief="solid")
         self.sideboard.pack(side=tk.RIGHT, fill=tk.Y)
         self.sideboard.pack_propagate(False)
 
-        # Sideboard Elements
         tk.Label(self.sideboard, text="קנגורו - מאת גולן גלנט", font=("Arial", 16, "bold"), 
                  bg="#333", fg="#ffd700", wraplength=230).pack(pady=20)
         
@@ -155,35 +137,28 @@ class KangarooGame:
                                 justify=tk.RIGHT)
         instructions.pack(side=tk.BOTTOM, pady=20)
 
-        # Canvas
         self.canvas = tk.Canvas(self.main_frame, width=WIDTH, height=HEIGHT, bg="#87CEEB")
         self.canvas.pack(side=tk.LEFT)
 
-        # --- Assets Loading (With Flip Logic) ---
         self.kangaroo_right = None
         self.kangaroo_left = None
 
         if os.path.exists("kangaroo.png"):
             if HAS_PIL:
-                # 1. Use Pillow to load and flip programmatically
                 try:
                     pil_image = Image.open("kangaroo.png")
-                    # Create Right Facing
                     self.kangaroo_right = ImageTk.PhotoImage(pil_image)
-                    # Create Left Facing (Mirror)
                     self.kangaroo_left = ImageTk.PhotoImage(pil_image.transpose(Image.FLIP_LEFT_RIGHT))
                 except Exception as e:
                     print(f"Error processing image with PIL: {e}")
             else:
-                # 2. Fallback to standard Tkinter (No Flip)
                 try:
                     img = tk.PhotoImage(file="kangaroo.png")
                     self.kangaroo_right = img
-                    self.kangaroo_left = img # Both point to the same image
+                    self.kangaroo_left = img 
                 except Exception as e:
                     print(f"Error loading image: {e}")
 
-        # --- Game State ---
         self.questions = load_questions()
         self.platforms = []
         self.particles = []
@@ -205,12 +180,10 @@ class KangarooGame:
         self.game_over = False
         self.won = False
         
-        # --- Input Handling ---
         self.keys = {"left": False, "right": False, "up": False}
         self.root.bind("<KeyPress>", self.key_down)
         self.root.bind("<KeyRelease>", self.key_up)
 
-        # --- Start ---
         self.init_level()
         self.update_ui()
         self.animate()
@@ -266,10 +239,10 @@ class KangarooGame:
         if p['can_move']:
             if self.keys['right']:
                 p['dx'] = SPEED
-                p['facing_right'] = True # Update facing direction
+                p['facing_right'] = True 
             elif self.keys['left']:
                 p['dx'] = -SPEED
-                p['facing_right'] = False # Update facing direction
+                p['facing_right'] = False 
             else:
                 p['dx'] = 0
         else:
@@ -426,10 +399,8 @@ class KangarooGame:
     def draw(self):
         self.canvas.delete("all")
         
-        # Draw Water
         self.canvas.create_rectangle(0, 580, WIDTH, 600, fill="#0000CD", outline="")
 
-        # Draw Platforms
         for p in self.platforms:
             if not p.visible: continue
             
@@ -458,12 +429,10 @@ class KangarooGame:
                 self.canvas.create_rectangle(screen_x, p.y + p.height, screen_x + p.width, HEIGHT, 
                                              fill="#DAA520", outline="")
 
-        # Draw Player (With Flip Logic)
         p = self.player
         if not p['sinking']:
             screen_px = p['x'] - self.camera_x
             
-            # Select correct image based on direction
             current_img = self.kangaroo_right if p['facing_right'] else self.kangaroo_left
 
             if current_img:
@@ -472,7 +441,6 @@ class KangarooGame:
                 self.canvas.create_rectangle(screen_px, p['y'], screen_px + p['w'], p['y'] + p['h'], 
                                              fill="#8B4513", outline="")
 
-        # Draw Particles
         for i in range(len(self.particles) - 1, -1, -1):
             part = self.particles[i]
             part.update()
@@ -485,9 +453,6 @@ class KangarooGame:
                                     sx + part.radius, part.y + part.radius,
                                     fill="#4FC3F7", outline="")
 
-# ==========================================
-# BOOTSTRAP
-# ==========================================
 if __name__ == "__main__":
     root = tk.Tk()
     

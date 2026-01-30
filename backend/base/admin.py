@@ -9,7 +9,5 @@ class GameAdmin(admin.ModelAdmin):
 
 @admin.register(Player)
 class PlayerAdmin(UserAdmin):
-    # We reset fieldsets to default UserAdmin but ensure email is visible
-    # or you can customize it further if needed.
     list_display = ('username', 'email', 'id', 'is_staff')
     ordering = ('email',)

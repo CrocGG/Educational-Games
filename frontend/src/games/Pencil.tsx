@@ -1,7 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect, useCallback } from "react";
 
-// --- Types ---
 interface PixelMathGameProps {
   gameName: string;
   currentHighScore: number;
@@ -32,26 +31,24 @@ interface PatternData {
   data: string[];
 }
 
-// --- Constants & Config ---
 
 const rgb = (r: number, g: number, b: number) => `rgb(${r}, ${g}, ${b})`;
 
 const COLORS: Record<string, number[]> = {
-  ".": [255, 255, 255], // White (Empty)
-  R: [230, 50, 50],     // Red
-  G: [50, 180, 50],     // Green
-  B: [50, 100, 230],    // Blue
-  Y: [255, 215, 0],     // Yellow
-  O: [255, 140, 0],     // Orange
-  P: [147, 112, 219],   // Purple
-  K: [40, 40, 40],      // Black/Key
-  S: [135, 206, 250],   // Sky Blue
-  N: [139, 69, 19],     // Brown
-  L: [50, 205, 50],     // Lime
-  A: [128, 128, 128],   // Gray
+  ".": [255, 255, 255], 
+  R: [230, 50, 50],     
+  G: [50, 180, 50],     
+  B: [50, 100, 230],    
+  Y: [255, 215, 0],     
+  O: [255, 140, 0],     
+  P: [147, 112, 219],   
+  K: [40, 40, 40],      
+  S: [135, 206, 250],   
+  N: [139, 69, 19],    
+  L: [50, 205, 50],    
+  A: [128, 128, 128],   
 };
 
-// 12x12 PATTERNS
 const RAW_PATTERNS: PatternData[] = [
   {
     name: "Heart",
@@ -223,7 +220,7 @@ const RAW_PATTERNS: PatternData[] = [
       "GGGGNGGGGGGG",
     ],
   },
-  // --- NEW PATTERNS ---
+
   {
     name: "Pizza Slice",
     data: [
@@ -311,22 +308,18 @@ const RAW_PATTERNS: PatternData[] = [
   },
 ];
 
-// --- Helper Functions ---
 
 const getRandomInt = (min: number, max: number) => {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 };
 
-// Generates equation string for a target answer
 const generateMathProblem = (target: number): string => {
   const op = Math.random() > 0.5 ? "+" : "-";
   if (op === "+") {
-    // a + b = target
     const a = target > 1 ? getRandomInt(1, target - 1) : 0;
     const b = target - a;
     return `${a} + ${b}`;
   } else {
-    // a - b = target
     const b = getRandomInt(1, 10);
     const a = target + b;
     return `${a} - ${b}`;
@@ -351,7 +344,6 @@ const parseGridData = (patternData: string[]) => {
 };
 
 const createPalette = (usedChars: string[]) => {
-  // Create a pool of random numbers 1-50 unique
   const pool = Array.from({ length: 50 }, (_, i) => i + 1).sort(
     () => Math.random() - 0.5
   );
@@ -371,7 +363,6 @@ const createPalette = (usedChars: string[]) => {
       color: rgb(colorRGB[0], colorRGB[1], colorRGB[2]),
     });
 
-    // 40% chance to have a second number for the same color (adds difficulty)
     if (Math.random() > 0.6) {
       const ans2 = pool[poolIdx++];
       charToAnswers[char].push(ans2);
@@ -388,14 +379,12 @@ const createPalette = (usedChars: string[]) => {
   return { paletteList, charToAnswers };
 };
 
-// --- Component ---
 
 export default function PixelMathGame({
   currentHighScore,
   onClose,
   onUpdateHighScore,
 }: PixelMathGameProps) {
-  // Game State
   const [tiles, setTiles] = useState<TileData[]>([]);
   const [palette, setPalette] = useState<PaletteItem[]>([]);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
@@ -423,7 +412,6 @@ export default function PixelMathGame({
     setPalette(paletteList);
 
     const newTiles: TileData[] = [];
-    // CHANGED: 12x12 Grid
     const rows = 12;
     const cols = 12;
 
@@ -451,7 +439,6 @@ export default function PixelMathGame({
     setTiles(newTiles);
   }, []);
 
-  // Initial Load
   useEffect(() => {
     startNewGame();
   }, [startNewGame]);
@@ -465,7 +452,6 @@ export default function PixelMathGame({
     if (tile.isPainted) return;
 
     if (tile.answer === selectedBtn.ans) {
-      // Correct
       const updatedTiles = [...tiles];
       updatedTiles[tileIndex] = { ...tile, isPainted: true };
       setTiles(updatedTiles);
@@ -478,7 +464,6 @@ export default function PixelMathGame({
         if (onUpdateHighScore) onUpdateHighScore(newScore);
       }
 
-      // Check Win
       if (updatedTiles.every((t) => t.isPainted)) {
         setGameOver(true);
         setMessage(`${patternName} Complete!`);
@@ -488,7 +473,6 @@ export default function PixelMathGame({
         setMsgColor("rgb(0, 100, 0)");
       }
     } else {
-      // Wrong
       setScore((prev) => Math.max(0, prev - 5));
       setMessage("Try Again!");
       setMsgColor("rgb(200, 0, 0)");
@@ -513,16 +497,15 @@ export default function PixelMathGame({
         style={{
           display: "flex",
           gap: "30px",
-          maxWidth: "1100px", // Reduced width slightly
+          maxWidth: "1100px",
           width: "100%",
         }}
       >
-        {/* --- GRID AREA (Left/Center) --- */}
+        { }
         <div style={{ flex: 1 }}>
           <div
             style={{
               display: "grid",
-              // CHANGED: 12 Columns
               gridTemplateColumns: `repeat(12, 1fr)`,
               gap: "2px",
               backgroundColor: "rgb(255, 255, 255)",
@@ -558,7 +541,6 @@ export default function PixelMathGame({
                     alignItems: "center",
                     justifyContent: "center",
                     cursor: tile.isPainted ? "default" : "pointer",
-                    // CHANGED: Slightly larger font since tiles are bigger
                     fontSize: "0.85rem",
                     fontWeight: "bold",
                     color: tile.isPainted ? "transparent" : "rgb(50, 50, 50)",
@@ -590,7 +572,7 @@ export default function PixelMathGame({
           </div>
         </div>
 
-        {/* --- SIDEBAR (Right) --- */}
+        { }
         <div
           style={{
             width: "300px",
@@ -599,7 +581,7 @@ export default function PixelMathGame({
             gap: "20px",
           }}
         >
-          {/* Title / Header */}
+          { }
           <div>
             <h2 style={{ margin: 0, color: "rgb(50,50,50)" }}>Palette</h2>
             <p style={{ margin: "5px 0", fontSize: "0.9rem", color: "#666" }}>
@@ -609,7 +591,7 @@ export default function PixelMathGame({
             </p>
           </div>
 
-          {/* Palette Grid */}
+          { }
           <div
             style={{
               display: "grid",
@@ -643,7 +625,7 @@ export default function PixelMathGame({
                     transform: isSelected ? "scale(1.02)" : "scale(1)",
                   }}
                 >
-                  {/* Number Badge */}
+                  { }
                   <div
                     style={{
                       width: "32px",
@@ -660,7 +642,7 @@ export default function PixelMathGame({
                   >
                     {p.ans}
                   </div>
-                  {/* Checkmark for selection */}
+                  { }
                   {isSelected && (
                     <div
                       style={{
@@ -680,7 +662,7 @@ export default function PixelMathGame({
             })}
           </div>
 
-          {/* Score Board */}
+          { }
           <div
             style={{
               marginTop: "auto",
@@ -715,7 +697,7 @@ export default function PixelMathGame({
             </div>
           </div>
 
-          {/* Message Area */}
+          { }
           <div
             style={{
               fontSize: "1.2rem",
@@ -728,7 +710,7 @@ export default function PixelMathGame({
             {message}
           </div>
 
-          {/* Controls */}
+          { }
           <div
             style={{ display: "flex", flexDirection: "column", gap: "10px" }}
           >
@@ -766,7 +748,7 @@ export default function PixelMathGame({
         </div>
       </div>
 
-      {/* Victory Overlay */}
+      { }
       {gameOver && (
         <div
           style={{

@@ -2,10 +2,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useRef, useCallback } from "react";
 
-// --- Types & Props ---
 interface CrawlerGameProps {
   gameName: string;
-  currentHighScore: number; // This is the Best Streak recorded so far
+  currentHighScore: number; 
   onClose: () => void;
   onUpdateHighScore: (newScore: number) => void;
 }
@@ -50,12 +49,10 @@ const CrawlerGame: React.FC<CrawlerGameProps> = ({
   onClose,
   onUpdateHighScore,
 }) => {
-  // --- Game State ---
   const [leaves, setLeaves] = useState<number>(INITIAL_LEAVES);
   const [turn, setTurn] = useState<Turn>("human");
   const [status, setStatus] = useState<GameStatus>("playing");
   
-  // FIXED: Start at 0 for every new session
   const [currentStreak, setCurrentStreak] = useState<number>(0);
   
   const [message, setMessage] = useState<string>("Your turn! Click a button.");
@@ -64,7 +61,6 @@ const CrawlerGame: React.FC<CrawlerGameProps> = ({
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // --- Drawing ---
   const drawScene = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -73,7 +69,6 @@ const CrawlerGame: React.FC<CrawlerGameProps> = ({
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // 1. Branch
     ctx.beginPath();
     ctx.moveTo(50, 200);
     ctx.lineTo(650, 200);
@@ -82,10 +77,8 @@ const CrawlerGame: React.FC<CrawlerGameProps> = ({
     ctx.lineCap = "round";
     ctx.stroke();
 
-    // 2. Leaves
     const startX = 600;
     for (let i = 0; i < leaves; i++) {
-      // Adjusted spacing slightly to fit 13 leaves comfortably
       const x = startX - i * 42; 
       const y = 200;
 
@@ -93,13 +86,11 @@ const CrawlerGame: React.FC<CrawlerGameProps> = ({
       ctx.strokeStyle = "#33691E";
       ctx.lineWidth = 2;
       
-      // Leaf body
       ctx.beginPath();
       ctx.ellipse(x + 20, y - 25, 20, 15, 0, 0, 2 * Math.PI);
       ctx.fill();
       ctx.stroke();
 
-      // Leaf vein
       ctx.beginPath();
       ctx.moveTo(x + 5, y - 25);
       ctx.lineTo(x + 35, y - 25);
@@ -107,7 +98,6 @@ const CrawlerGame: React.FC<CrawlerGameProps> = ({
       ctx.stroke();
     }
 
-    // 3. Crawler / Butterfly
     if (status === "gameover" && winner) {
       drawButterfly(ctx, winner);
     } else {
@@ -116,26 +106,23 @@ const CrawlerGame: React.FC<CrawlerGameProps> = ({
   }, [leaves, status, winner]);
 
   const drawCrawler = (ctx: CanvasRenderingContext2D) => {
-    // Dynamic calculation based on INITIAL_LEAVES constant
     const leavesEaten = INITIAL_LEAVES - leaves;
-    const catX = 50 + leavesEaten * 42; // Match the spacing in loop (42)
+    const catX = 50 + leavesEaten * 42; 
 
     ctx.fillStyle = "#AED581";
     ctx.strokeStyle = "#33691E";
     ctx.lineWidth = 1;
 
-    // Body Segments
     ctx.beginPath();
-    ctx.arc(catX - 45, 195, 15, 0, Math.PI * 2); // Rear
+    ctx.arc(catX - 45, 195, 15, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.arc(catX - 15, 195, 15, 0, Math.PI * 2); // Middle
+    ctx.arc(catX - 15, 195, 15, 0, Math.PI * 2); 
     ctx.fill();
     ctx.stroke();
 
-    // Head
     ctx.fillStyle = "#FF7043";
     ctx.strokeStyle = "black";
     ctx.lineWidth = 2;
@@ -144,11 +131,10 @@ const CrawlerGame: React.FC<CrawlerGameProps> = ({
     ctx.fill();
     ctx.stroke();
 
-    // Face
     ctx.fillStyle = "black";
-    ctx.beginPath(); ctx.arc(catX + 17, 190, 2.5, 0, Math.PI * 2); ctx.fill(); // Eye L
-    ctx.beginPath(); ctx.arc(catX + 37, 190, 2.5, 0, Math.PI * 2); ctx.fill(); // Eye R
-    ctx.beginPath(); ctx.arc(catX + 25, 200, 10, 0, Math.PI, false); ctx.strokeStyle = "black"; ctx.stroke(); // Smile
+    ctx.beginPath(); ctx.arc(catX + 17, 190, 2.5, 0, Math.PI * 2); ctx.fill(); 
+    ctx.beginPath(); ctx.arc(catX + 37, 190, 2.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(catX + 25, 200, 10, 0, Math.PI, false); ctx.strokeStyle = "black"; ctx.stroke(); 
   };
 
   const drawButterfly = (ctx: CanvasRenderingContext2D, winnerName: string) => {
@@ -160,7 +146,6 @@ const CrawlerGame: React.FC<CrawlerGameProps> = ({
     ctx.strokeStyle = "black";
     ctx.lineWidth = 3;
 
-    // Wings
     ctx.beginPath();
     ctx.moveTo(cx, cy); ctx.lineTo(cx - 80, cy - 80); ctx.lineTo(cx - 80, cy + 80);
     ctx.closePath(); ctx.fill(); ctx.stroke();
@@ -169,14 +154,12 @@ const CrawlerGame: React.FC<CrawlerGameProps> = ({
     ctx.moveTo(cx, cy); ctx.lineTo(cx + 80, cy - 80); ctx.lineTo(cx + 80, cy + 80);
     ctx.closePath(); ctx.fill(); ctx.stroke();
 
-    // Body
     ctx.fillStyle = "#3E2723";
     ctx.beginPath();
     ctx.ellipse(cx, cy, 15, 60, 0, 0, Math.PI * 2);
     ctx.fill();
   };
 
-  // --- Logic ---
   useEffect(() => { drawScene(); }, [drawScene]);
 
   const handleWin = (lastPlayer: Turn) => {
@@ -185,13 +168,10 @@ const CrawlerGame: React.FC<CrawlerGameProps> = ({
     setStatus("gameover");
 
     if (newWinner === "You") {
-      // 1. Calculate new streak
       const newStreak = currentStreak + 1;
       
-      // 2. Update local state
       setCurrentStreak(newStreak);
 
-      // 3. Only update Global High Score if we beat the record
       if (newStreak > currentHighScore) {
          onUpdateHighScore(newStreak);
       }
@@ -200,7 +180,6 @@ const CrawlerGame: React.FC<CrawlerGameProps> = ({
       setMsgColor("#D81B60");
       playWin();
     } else {
-      // If Robot wins, the streak is broken!
       setCurrentStreak(0);
       
       setMessage("🤖 Robot is the Butterfly!");
@@ -228,18 +207,14 @@ const CrawlerGame: React.FC<CrawlerGameProps> = ({
     }
   };
 
-  // AI Logic 
   useEffect(() => {
     if (turn === "robot" && status === "playing") {
       const timer = setTimeout(() => {
-        // AI Strategy: Try to leave the opponent with a multiple of 3.
         let move = leaves % 3; 
         
-        // If move is 0 (e.g., leaves is 12), the AI is in a losing position!
-        // It is forced to play sub-optimally. We force it to take 1.
+
         if (move === 0) move = 1; 
         
-        // Safety check
         if (move > leaves) move = leaves;
         
         processMove(move, "robot");
@@ -257,7 +232,6 @@ const CrawlerGame: React.FC<CrawlerGameProps> = ({
     setMsgColor("#1B5E20");
   };
 
-  // --- Render ---
   return (
     <div style={{
       display: "flex", flexDirection: "column", alignItems: "center",
@@ -273,7 +247,7 @@ const CrawlerGame: React.FC<CrawlerGameProps> = ({
         padding: "10px", borderRadius: "8px", textAlign: "center", border: "3px solid #2E7D32", marginTop: "10px",
         display: "flex", justifyContent: "space-around", color: "white"
       }}>
-        {/* Display Current Streak vs Best Streak */}
+        { }
         <div>
            <span style={{ fontSize: "0.9rem", color: "#AED581" }}>CURRENT STREAK</span>
            <div style={{ fontSize: "1.5rem", fontWeight: "bold" }}>{currentStreak}</div>

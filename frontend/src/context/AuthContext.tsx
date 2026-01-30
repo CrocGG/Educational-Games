@@ -30,7 +30,6 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const navigate = useNavigate();
     
-    // 1. Add a loading state
     const [loading, setLoading] = useState(true);
     const [user, setUser] = useState<User | null>(null);
     const [token, setToken] = useState<string | null>(() => localStorage.getItem('access_token'));
@@ -50,13 +49,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     useEffect(() => {
-        // 2. logic to handle the token check
         if (token) {
             processToken(token);
         }
-        // 3. Once we have checked the token (or if there is none), we stop loading
         setLoading(false);
-    }, [token]); // This runs on mount because we initialize token from localStorage
+    }, [token]);
 
     const login = (accessToken: string) => {
         localStorage.setItem('access_token', accessToken);
@@ -71,9 +68,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         navigate('/');
     };
 
-    // 4. BLOCK rendering until loading is complete
     if (loading) {
-        // You can replace this with a nice Spinner component later
         return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading application...</div>;
     }
 

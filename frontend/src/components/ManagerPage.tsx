@@ -19,7 +19,6 @@ export default function ManagerPage() {
 
   const { register, handleSubmit, reset, setValue } = useForm<GameFormData>();
 
-  // Access control check
   if (!user || !user.is_admin) {
     return (
       <div style={{ textAlign: "center", marginTop: "50px", color: "red" }}>
@@ -42,11 +41,9 @@ export default function ManagerPage() {
     fetchGames();
   }, []);
 
-  // Populate form when editingGame changes
   useEffect(() => {
     if (editingGame) {
       setValue("name", editingGame.name);
-      // Note: We cannot set the value of type="file" programmatically for security reasons
     } else {
       reset();
     }
@@ -97,10 +94,8 @@ export default function ManagerPage() {
   };
 
   const handleDownloadCSV = () => {
-    // 1. Define Headers
     const headers = ["ID", "Game Name", "High Score Player", "Top Player ID", "Image URL"];
 
-    // 2. Map data to rows (handling nulls and wrapping in quotes to prevent CSV breaks)
     const rows = games.map((game) => [
       game.id,
       `"${game.name}"`,
@@ -109,13 +104,11 @@ export default function ManagerPage() {
       game.image || "No Image",
     ]);
 
-    // 3. Combine headers and rows
     const csvContent = [
       headers.join(","),
       ...rows.map((row) => row.join(",")),
     ].join("\n");
 
-    // 4. Create a Blob and trigger download
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -236,7 +229,7 @@ export default function ManagerPage() {
               <td>
                 {game.image && (
                   <img
-                    src={game.image} // Make sure this URL includes the server base URL if needed
+                    src={game.image} 
                     alt={game.name}
                     style={{
                       width: "50px",

@@ -13,23 +13,19 @@ export default function Login() {
   const { login } = useAuth();
 
   const onSubmit = async (data: any) => {
-    if (loading) return; // Prevent double submissions
+    if (loading) return;
     
     setLoading(true);
     try {
       const tokenRes = await api.post("/token/", data);
       
-      // 1. Log the user in (sets state in Provider)
       login(tokenRes.data.access);
       
-      // 2. Navigate away ONLY after successful login
       navigate("/games");
       
     } catch (err: any) {
       console.error("Login error details:", err.response?.data);
-      
-      // 3. Use a standard alert. This stops the "flicker" 
-      // because it pauses the browser until the user clicks OK.
+
       alert("Login Failed: Please check your username and password.");
       
     } finally {
