@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useRef, useState } from 'react';
@@ -109,12 +110,14 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const requestRef = useRef<number>(0);
-  const isMountedRef = useRef(true); // SAFETY: Prevents memory leaks on unmount
+  const isMountedRef = useRef(true);
 
-  // Audio Context Ref (Lazy initialized)
+  // SAFETY: Ref to hold the Splash Timer so we can clear it
+  const gameOverTimerRef = useRef<number | null>(null);
+  // Audio Context Ref
   const audioCtxRef = useRef<AudioContext | null>(null);
 
-  // Game Logic Refs (Mutable state that doesn't trigger re-renders)
+  // Game Logic Refs
   const gameStateRef = useRef<'start' | 'playing' | 'gameover' | 'win'>('start');
   const playerRef = useRef<Player>({
     x: 50, y: 470, w: 60, h: 60,
@@ -129,15 +132,15 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
   const keysRef = useRef<{ [key: string]: boolean }>({ left: false, right: false, up: false });
   const scoreRef = useRef(0);
   const answeredRef = useRef<Set<number>>(new Set());
-  
+
   // NEW: Ref to hold the randomized questions for the current run
   const activeQuestionsRef = useRef<Question[]>([]);
-  
+
   // Image Ref
   const kangarooImgRef = useRef<HTMLImageElement | null>(null);
   const isImgLoadedRef = useRef(false);
 
-  // React State for UI (Only for visual overlay, NOT game loop)
+  // React State for UI
   const [uiState, setUiState] = useState<'start' | 'playing' | 'gameover' | 'win'>('start');
   const [uiScore, setUiScore] = useState(0);
   const [currentQuestionText, setCurrentQuestionText] = useState("לחץ על המשחק והתחל ללכת (חצים ורווח)!");
@@ -149,13 +152,13 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
   useEffect(() => {
     isMountedRef.current = true;
 
-    // 1. Load Image securely
+    // 1. Load Image
     const img = new Image();
     img.src = KANGAROO_BASE64;
     img.onload = () => {
-      if(isMountedRef.current) {
+      if (isMountedRef.current) {
         kangarooImgRef.current = img;
-        isImgLoadedRef.current = true; // Flag that image is ready
+        isImgLoadedRef.current = true;
       }
     };
     img.onerror = () => {
@@ -172,11 +175,12 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
     initLevel();
     requestRef.current = requestAnimationFrame(tick);
 
-    // 4. CLEANUP (Crucial for preventing crashes)
+    // 4. CLEANUP
     return () => {
       isMountedRef.current = false;
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
       if (audioCtxRef.current) audioCtxRef.current.close();
+      if (gameOverTimerRef.current) clearTimeout(gameOverTimerRef.current);
     };
   }, []);
 
@@ -187,66 +191,72 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
         audioCtxRef.current = new AudioContext();
       }
     }
-    // Resume if suspended (browser policy)
     if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
-      audioCtxRef.current.resume().catch(() => {});
+      audioCtxRef.current.resume().catch(() => { });
     }
   };
 
   const playSound = (type: 'jump' | 'splash' | 'wrong' | 'win' | 'point') => {
     if (!audioCtxRef.current) return;
-    const ctx = audioCtxRef.current;
+    try {
+      const ctx = audioCtxRef.current;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      const now = ctx.currentTime;
 
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-
-    const now = ctx.currentTime;
-
-    if (type === 'jump') {
-      osc.frequency.setValueAtTime(400, now);
-      gain.gain.setValueAtTime(0.1, now);
-      osc.start(now);
-      osc.stop(now + 0.1);
-    } else if (type === 'splash') {
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(150, now);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-      osc.start(now);
-      osc.stop(now + 0.3);
-    } else if (type === 'wrong') {
-      osc.type = 'square';
-      osc.frequency.setValueAtTime(100, now);
-      gain.gain.setValueAtTime(0.1, now);
-      osc.start(now);
-      osc.stop(now + 0.4);
-    } else if (type === 'point') {
-      osc.frequency.setValueAtTime(1000, now);
-      gain.gain.setValueAtTime(0.1, now);
-      osc.start(now);
-      osc.stop(now + 0.1);
-    } else if (type === 'win') {
-      osc.frequency.setValueAtTime(600, now);
-      osc.frequency.setValueAtTime(800, now + 0.1);
-      gain.gain.setValueAtTime(0.1, now);
-      osc.start(now);
-      osc.stop(now + 0.3);
+      if (type === 'jump') {
+        osc.frequency.setValueAtTime(400, now);
+        gain.gain.setValueAtTime(0.1, now);
+        osc.start(now);
+        osc.stop(now + 0.1);
+      } else if (type === 'splash') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+        osc.start(now);
+        osc.stop(now + 0.3);
+      } else if (type === 'wrong') {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(100, now);
+        gain.gain.setValueAtTime(0.1, now);
+        osc.start(now);
+        osc.stop(now + 0.4);
+      } else if (type === 'point') {
+        osc.frequency.setValueAtTime(1000, now);
+        gain.gain.setValueAtTime(0.1, now);
+        osc.start(now);
+        osc.stop(now + 0.1);
+      } else if (type === 'win') {
+        osc.frequency.setValueAtTime(600, now);
+        osc.frequency.setValueAtTime(800, now + 0.1);
+        gain.gain.setValueAtTime(0.1, now);
+        osc.start(now);
+        osc.stop(now + 0.3);
+      }
+    } catch (e) {
+      // Ignore audio errors to prevent crash
     }
   };
 
   const initLevel = () => {
+    // Clear any pending game over timers
+    if (gameOverTimerRef.current) {
+      clearTimeout(gameOverTimerRef.current);
+      gameOverTimerRef.current = null;
+    }
+
     const plats: Platform[] = [];
     let cx = 0;
 
-    // 1. Shuffle Questions for this run
     activeQuestionsRef.current = shuffleArray(RAW_QUESTIONS);
 
-    // Start Platform
+    // Start
     plats.push({ x: cx, y: 530, width: 300, height: 30, type: 'start', q_index: -1, label: '', visible: true });
     cx += 380;
 
-    // Questions Generation
+    // Questions
     activeQuestionsRef.current.forEach((q, i) => {
       // Green
       plats.push({ x: cx, y: 450, width: 140, height: 30, type: 'green', q_index: i, label: '', visible: true });
@@ -258,12 +268,11 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
       cx += GAP_TO_NEXT;
     });
 
-    // End Platform
+    // End
     plats.push({ x: cx, y: 500, width: 800, height: 30, type: 'end', q_index: 99, label: '', visible: true });
 
     platformsRef.current = plats;
 
-    // Reset Player
     playerRef.current = {
       x: 50, y: 470, w: 60, h: 60,
       dx: 0, dy: 0,
@@ -276,7 +285,6 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
     answeredRef.current = new Set();
     particlesRef.current = [];
 
-    // Reset UI safely
     setUiScore(0);
     gameStateRef.current = 'playing';
     setUiState('playing');
@@ -302,6 +310,10 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
 
   const updatePhysics = () => {
     const p = playerRef.current;
+
+    // SAFETY: If we are already game over or sinking logic has started, don't run this again
+    if (gameStateRef.current === 'gameover') return;
+
     if (p.sinking) return;
 
     // Movement
@@ -341,9 +353,11 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
       p.sinking = true;
       playSound('splash');
       createSplash(p.x + p.w / 2, 590);
-      
-      // Delay Game Over to let splash animation play
-      setTimeout(() => {
+
+      // SAFETY: Use a ref for the timeout so we can clear it if unmounted
+      if (gameOverTimerRef.current) clearTimeout(gameOverTimerRef.current);
+
+      gameOverTimerRef.current = window.setTimeout(() => {
         if (isMountedRef.current) {
           handleGameOver("צנחת לאגם! נסה שנית!");
         }
@@ -360,7 +374,6 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
     platformsRef.current.forEach(plat => {
       if (!plat.visible) return;
 
-      // Simple AABB Collision
       if (
         p.x < plat.x + plat.width &&
         p.x + p.w > plat.x &&
@@ -368,18 +381,15 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
         p.y + p.h <= plat.y + plat.height + 25 &&
         p.dy >= 0
       ) {
-        // Logic for landing on platform
         const isTrap = () => {
           if (['start', 'end', 'green'].includes(plat.type)) return false;
-          // Look up question in active list (randomized)
           const q = activeQuestionsRef.current[plat.q_index];
           if (!q) return false;
           return plat.type !== q.correct;
         };
 
         if (isTrap()) {
-          plat.visible = false; // Break the platform
-          // Also hide the partner platform so they can't jump back
+          plat.visible = false;
           platformsRef.current.forEach(other => {
             if (other.q_index === plat.q_index) other.visible = false;
           });
@@ -388,7 +398,6 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
           playSound('wrong');
           p.grounded = false;
         } else {
-          // Land Safely
           p.grounded = true;
           p.dy = 0;
           p.y = plat.y - p.h;
@@ -404,31 +413,24 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
       return;
     }
 
-    // Update Text Question (Throttled)
     if (plat.type === 'green') {
-      // Look up in randomized list
       const q = activeQuestionsRef.current[plat.q_index];
       if (q && q.text !== currentQuestionText) {
-          setCurrentQuestionText(q.text);
+        setCurrentQuestionText(q.text);
       }
       return;
     }
 
-    // Score Logic
     if (['Blue', 'Red'].includes(plat.type)) {
       if (!answeredRef.current.has(plat.q_index)) {
         scoreRef.current += 1;
-        
-        // Throttled UI Update
         if (scoreRef.current !== uiScore) {
-             setUiScore(scoreRef.current);
+          setUiScore(scoreRef.current);
         }
-        
         answeredRef.current.add(plat.q_index);
         playSound('point');
       }
 
-      // Hide the other answer option
       platformsRef.current.forEach(other => {
         if (other.q_index === plat.q_index && other !== plat && (other.type === 'Red' || other.type === 'Blue')) {
           other.visible = false;
@@ -452,20 +454,16 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
   };
 
   const draw = (ctx: CanvasRenderingContext2D) => {
-    // Clear
     ctx.clearRect(0, 0, WIDTH, HEIGHT);
-
-    // Background
     ctx.fillStyle = "#87CEEB";
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
     const cx = cameraXRef.current;
 
-    // Platforms
     platformsRef.current.forEach(p => {
       if (!p.visible) return;
       const sx = p.x - cx;
-      if (sx + p.width < 0 || sx > WIDTH) return; // Optimization: Don't draw off-screen
+      if (sx + p.width < 0 || sx > WIDTH) return;
 
       let color = "#2ecc71";
       if (p.type === 'Red') color = "#e74c3c";
@@ -489,41 +487,32 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
       }
     });
 
-    // Water
     ctx.fillStyle = "#0000CD";
     ctx.fillRect(0, 580, WIDTH, 20);
 
-    // Player
     const p = playerRef.current;
-    if (!p.sinking) {
-      const px = p.x - cx;
 
-      // DRAW LOGIC: Image or Fallback
-      if (isImgLoadedRef.current && kangarooImgRef.current) {
-        ctx.save();
-        if (!p.facingRight) {
-          ctx.translate(px + p.w, p.y);
-          ctx.scale(-1, 1);
-          ctx.drawImage(kangarooImgRef.current, 0, 0, p.w, p.h);
-        } else {
-          ctx.drawImage(kangarooImgRef.current, px, p.y, p.w, p.h);
-        }
-        ctx.restore();
+    // Draw player even if sinking (so we see him under water)
+    const px = p.x - cx;
+    if (isImgLoadedRef.current && kangarooImgRef.current) {
+      ctx.save();
+      if (!p.facingRight) {
+        ctx.translate(px + p.w, p.y);
+        ctx.scale(-1, 1);
+        ctx.drawImage(kangarooImgRef.current, 0, 0, p.w, p.h);
       } else {
-        // FALLBACK: If image isn't loaded yet, draw an orange square
-        // This ensures the player is ALWAYS visible
-        ctx.fillStyle = "#ff6b00"; // Bright Orange
-        ctx.fillRect(px, p.y, p.w, p.h);
-        
-        // Draw Eyes (so it looks like a face)
-        ctx.fillStyle = "white";
-        ctx.fillRect(px + (p.facingRight ? 40 : 10), p.y + 10, 10, 10);
-        ctx.fillStyle = "black";
-        ctx.fillRect(px + (p.facingRight ? 42 : 12), p.y + 12, 5, 5);
+        ctx.drawImage(kangarooImgRef.current, px, p.y, p.w, p.h);
       }
+      ctx.restore();
+    } else {
+      ctx.fillStyle = "#ff6b00";
+      ctx.fillRect(px, p.y, p.w, p.h);
+      ctx.fillStyle = "white";
+      ctx.fillRect(px + (p.facingRight ? 40 : 10), p.y + 10, 10, 10);
+      ctx.fillStyle = "black";
+      ctx.fillRect(px + (p.facingRight ? 42 : 12), p.y + 12, 5, 5);
     }
 
-    // Particles
     particlesRef.current.forEach(part => {
       const sx = part.x - cx;
       ctx.fillStyle = "#4FC3F7";
@@ -534,12 +523,15 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
   };
 
   const tick = () => {
-    // SAFETY: Stop loop if component unmounted
     if (!isMountedRef.current) return;
 
+    // Only run physics if playing. If gameover, we only draw (to keep the last frame visible)
     if (gameStateRef.current === 'playing') {
       updatePhysics();
       checkCollisions();
+      updateParticles();
+    } else if (gameStateRef.current === 'gameover' || gameStateRef.current === 'win') {
+      // Optional: Continue particle animation even after death for smooth effect
       updateParticles();
     }
 
@@ -552,16 +544,63 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
   };
 
   // ==========================================
-  // INPUT HANDLING
+  // STATE TRANSITIONS (FIXED TO PREVENT CRASH)
   // ==========================================
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    initAudio(); // Initialize audio on first user interaction
+  const handleGameOver = (msg: string) => {
+    if (!isMountedRef.current) return;
 
+    // SAFETY CHECK 1: If already gameover/win, DO NOT execute again.
+    // This prevents infinite loops and repeated state updates.
+    if (gameStateRef.current === 'gameover' || gameStateRef.current === 'win') return;
+
+    gameStateRef.current = 'gameover';
+    setUiState('gameover');
+    setCurrentQuestionText(msg);
+
+    // SAFETY CHECK 2: Wrap the callback in try-catch.
+    // If onUpdateHighScore fails (e.g. API error), the game won't crash/logout.
+    try {
+      onUpdateHighScore(scoreRef.current);
+    } catch (error) {
+      console.error("Failed to update high score:", error);
+    }
+  };
+
+  const handleWin = () => {
+    if (!isMountedRef.current) return;
+    if (gameStateRef.current === 'win' || gameStateRef.current === 'gameover') return;
+
+    gameStateRef.current = 'win';
+    setUiState('win');
+    playSound('win');
+    setCurrentQuestionText("! הגעת לאוסטרליה!");
+
+    try {
+      onUpdateHighScore(scoreRef.current);
+    } catch (error) {
+      console.error("Failed to update high score:", error);
+    }
+  };
+
+  const handleRestart = () => {
+    // Clear any pending timers
+    if (gameOverTimerRef.current) clearTimeout(gameOverTimerRef.current);
+
+    // Reset state refs BEFORE calling initLevel
+    gameStateRef.current = 'start';
+    initLevel();
+    if (containerRef.current) containerRef.current.focus();
+  };
+
+  // Input Handling
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (gameStateRef.current !== 'playing') return; // Disable input if not playing
+
+    initAudio();
     if (['ArrowLeft', 'ArrowRight', 'ArrowUp', ' '].includes(e.key)) {
       e.preventDefault();
     }
-
     if (['ArrowLeft', 'Left'].includes(e.key)) keysRef.current.left = true;
     if (['ArrowRight', 'Right'].includes(e.key)) keysRef.current.right = true;
     if (['ArrowUp', 'Up', ' '].includes(e.key)) keysRef.current.up = true;
@@ -571,32 +610,6 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
     if (['ArrowLeft', 'Left'].includes(e.key)) keysRef.current.left = false;
     if (['ArrowRight', 'Right'].includes(e.key)) keysRef.current.right = false;
     if (['ArrowUp', 'Up', ' '].includes(e.key)) keysRef.current.up = false;
-  };
-
-  // ==========================================
-  // STATE TRANSITIONS
-  // ==========================================
-
-  const handleGameOver = (msg: string) => {
-    if (!isMountedRef.current) return;
-    gameStateRef.current = 'gameover';
-    setUiState('gameover');
-    setCurrentQuestionText(msg);
-    onUpdateHighScore(scoreRef.current);
-  };
-
-  const handleWin = () => {
-    if (!isMountedRef.current) return;
-    gameStateRef.current = 'win';
-    setUiState('win');
-    playSound('win');
-    setCurrentQuestionText("! הגעת לאוסטרליה!");
-    onUpdateHighScore(scoreRef.current);
-  };
-
-  const handleRestart = () => {
-    initLevel();
-    if (containerRef.current) containerRef.current.focus();
   };
 
   // ==========================================
@@ -621,8 +634,8 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
           height={HEIGHT}
           style={{ border: '4px solid #333', borderRadius: '8px', background: '#87CEEB', cursor: 'pointer' }}
           onClick={() => {
-              containerRef.current?.focus();
-              initAudio();
+            containerRef.current?.focus();
+            initAudio();
           }}
         />
 
