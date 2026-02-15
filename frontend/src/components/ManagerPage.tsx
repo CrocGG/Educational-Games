@@ -94,14 +94,13 @@ export default function ManagerPage() {
   };
 
   const handleDownloadCSV = () => {
-    // Updated headers to match the new table structure
     const headers = ["ID", "Game Name", "High Score Player", "High Score", "Image URL"];
 
     const rows = games.map((game) => [
       game.id,
       `"${game.name}"`,
       `"${game.high_score_player_username || "No records"}"`,
-      game.high_score ?? 0, // Export the actual score
+      game.high_score ?? 0, 
       game.image || "No Image",
     ]);
 

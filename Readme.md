@@ -32,7 +32,7 @@ The project features a secure user authentication system, a centralized database
 ### **AI & Multimedia**
 
 * **Game AI:** `EasyAI` (Implementing Negamax algorithms, TwoPlayerGame, and AI_Player logic)
-* **Engines:** `Pygame Zero` (Pyzero) for fluid game mechanics.
+* **Engines:** `Pygame` for fluid game mechanics.
 * **Introduction:** `HeyGen` AI-generated video spokesperson.
 
 ---
@@ -43,7 +43,7 @@ The project features a secure user authentication system, a centralized database
 
 * **Python:** v3.13.x (Recommended)
 * **Node.js:** Latest LTS
-* **Docker:** (Optional, for Method #2)
+* **Docker:** (Optional, for Method #1)
 
 ---
 

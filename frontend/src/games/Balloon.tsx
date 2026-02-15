@@ -378,7 +378,6 @@ export default function BalloonGame({
       state.highScore = state.score;
       onUpdateHighScore(state.highScore);
     } else {
-      // onUpdateHighScore(state.score);
     }
   };
 

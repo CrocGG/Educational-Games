@@ -4,9 +4,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import KANGAROO_BASE64 from '../assets/pics/kangaroo.png';
 
-// ==========================================
-// TYPES
-// ==========================================
 interface KangarooGameProps {
   gameName: string;
   currentHighScore: number;
@@ -57,7 +54,6 @@ interface Player {
   canMove: boolean;
 }
 
-// CONSTANTS
 const WIDTH = 800;
 const HEIGHT = 600;
 const GRAVITY = 0.8;
@@ -67,7 +63,6 @@ const GAP_TO_ANSWER = 250;
 const GAP_TO_NEXT = 320;
 const PLATFORM_WIDTH = 200;
 
-// NEW: All 20 Questions from CSV
 const RAW_QUESTIONS: Question[] = [
   { text: "מהו צבע השמש?", blue: "צהוב", red: "סגול", correct: "Blue" },
   { text: "חצי מ-30?", blue: "15", red: "20", correct: "Blue" },
@@ -91,7 +86,6 @@ const RAW_QUESTIONS: Question[] = [
   { text: "באיזה קוטב הפינגווין???🐧", blue: "הדרומי", red: "הצפוני", correct: "Blue" },
 ];
 
-// UTILS: Fisher-Yates Shuffle
 const shuffleArray = <T,>(array: T[]): T[] => {
   const newArr = [...array];
   for (let i = newArr.length - 1; i > 0; i--) {
@@ -106,18 +100,14 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
   onClose,
   onUpdateHighScore,
 }) => {
-  // DOM Refs
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const requestRef = useRef<number>(0);
   const isMountedRef = useRef(true);
 
-  // SAFETY: Ref to hold the Splash Timer so we can clear it
   const gameOverTimerRef = useRef<number | null>(null);
-  // Audio Context Ref
   const audioCtxRef = useRef<AudioContext | null>(null);
 
-  // Game Logic Refs
   const gameStateRef = useRef<'start' | 'playing' | 'gameover' | 'win'>('start');
   const playerRef = useRef<Player>({
     x: 50, y: 470, w: 60, h: 60,
@@ -133,26 +123,18 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
   const scoreRef = useRef(0);
   const answeredRef = useRef<Set<number>>(new Set());
 
-  // NEW: Ref to hold the randomized questions for the current run
   const activeQuestionsRef = useRef<Question[]>([]);
 
-  // Image Ref
   const kangarooImgRef = useRef<HTMLImageElement | null>(null);
   const isImgLoadedRef = useRef(false);
 
-  // React State for UI
   const [uiState, setUiState] = useState<'start' | 'playing' | 'gameover' | 'win'>('start');
   const [uiScore, setUiScore] = useState(0);
   const [currentQuestionText, setCurrentQuestionText] = useState("לחץ על המשחק והתחל ללכת (חצים ורווח)!");
 
-  // ==========================================
-  // INITIALIZATION
-  // ==========================================
-
   useEffect(() => {
     isMountedRef.current = true;
 
-    // 1. Load Image
     const img = new Image();
     img.src = KANGAROO_BASE64;
     img.onload = () => {
@@ -166,16 +148,13 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
       isImgLoadedRef.current = false;
     };
 
-    // 2. Focus container
     if (containerRef.current) {
       containerRef.current.focus();
     }
 
-    // 3. Start Game Loop
     initLevel();
     requestRef.current = requestAnimationFrame(tick);
 
-    // 4. CLEANUP
     return () => {
       isMountedRef.current = false;
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
@@ -236,12 +215,10 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
         osc.stop(now + 0.3);
       }
     } catch (e) {
-      // Ignore audio errors to prevent crash
     }
   };
 
   const initLevel = () => {
-    // Clear any pending game over timers
     if (gameOverTimerRef.current) {
       clearTimeout(gameOverTimerRef.current);
       gameOverTimerRef.current = null;
@@ -252,23 +229,18 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
 
     activeQuestionsRef.current = shuffleArray(RAW_QUESTIONS);
 
-    // Start
     plats.push({ x: cx, y: 530, width: 300, height: 30, type: 'start', q_index: -1, label: '', visible: true });
     cx += 380;
 
-    // Questions
     activeQuestionsRef.current.forEach((q, i) => {
-      // Green
       plats.push({ x: cx, y: 450, width: 140, height: 30, type: 'green', q_index: i, label: '', visible: true });
       cx += GAP_TO_ANSWER;
 
-      // Answers
       plats.push({ x: cx, y: 300, width: PLATFORM_WIDTH, height: 30, type: 'Blue', q_index: i, label: q.blue, visible: true });
       plats.push({ x: cx, y: 500, width: PLATFORM_WIDTH, height: 30, type: 'Red', q_index: i, label: q.red, visible: true });
       cx += GAP_TO_NEXT;
     });
 
-    // End
     plats.push({ x: cx, y: 500, width: 800, height: 30, type: 'end', q_index: 99, label: '', visible: true });
 
     platformsRef.current = plats;
@@ -291,9 +263,6 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
     setCurrentQuestionText("התחל ללכת וקפוץ לפלטפורמה הירוקה הראשונה!");
   };
 
-  // ==========================================
-  // GAME LOOP
-  // ==========================================
 
   const createSplash = (x: number, y: number) => {
     for (let i = 0; i < 25; i++) {
@@ -311,12 +280,10 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
   const updatePhysics = () => {
     const p = playerRef.current;
 
-    // SAFETY: If we are already game over or sinking logic has started, don't run this again
     if (gameStateRef.current === 'gameover') return;
 
     if (p.sinking) return;
 
-    // Movement
     if (p.canMove) {
       if (keysRef.current.right) {
         p.dx = SPEED;
@@ -331,30 +298,25 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
       p.dx = 0;
     }
 
-    // Jump
     if (p.canMove && keysRef.current.up && p.grounded) {
       p.dy = JUMP_STRENGTH;
       p.grounded = false;
       playSound('jump');
     }
 
-    // Apply Physics
     p.dy += GRAVITY;
     p.x += p.dx;
     p.y += p.dy;
 
-    // Move Camera
     if (p.x > 250) {
       cameraXRef.current = p.x - 250;
     }
 
-    // Water Collision
     if (p.y > 580 && !p.sinking) {
       p.sinking = true;
       playSound('splash');
       createSplash(p.x + p.w / 2, 590);
 
-      // SAFETY: Use a ref for the timeout so we can clear it if unmounted
       if (gameOverTimerRef.current) clearTimeout(gameOverTimerRef.current);
 
       gameOverTimerRef.current = window.setTimeout(() => {
@@ -492,7 +454,6 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
 
     const p = playerRef.current;
 
-    // Draw player even if sinking (so we see him under water)
     const px = p.x - cx;
     if (isImgLoadedRef.current && kangarooImgRef.current) {
       ctx.save();
@@ -525,13 +486,11 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
   const tick = () => {
     if (!isMountedRef.current) return;
 
-    // Only run physics if playing. If gameover, we only draw (to keep the last frame visible)
     if (gameStateRef.current === 'playing') {
       updatePhysics();
       checkCollisions();
       updateParticles();
     } else if (gameStateRef.current === 'gameover' || gameStateRef.current === 'win') {
-      // Optional: Continue particle animation even after death for smooth effect
       updateParticles();
     }
 
@@ -543,23 +502,15 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
     requestRef.current = requestAnimationFrame(tick);
   };
 
-  // ==========================================
-  // STATE TRANSITIONS (FIXED TO PREVENT CRASH)
-  // ==========================================
-
   const handleGameOver = (msg: string) => {
     if (!isMountedRef.current) return;
 
-    // SAFETY CHECK 1: If already gameover/win, DO NOT execute again.
-    // This prevents infinite loops and repeated state updates.
     if (gameStateRef.current === 'gameover' || gameStateRef.current === 'win') return;
 
     gameStateRef.current = 'gameover';
     setUiState('gameover');
     setCurrentQuestionText(msg);
 
-    // SAFETY CHECK 2: Wrap the callback in try-catch.
-    // If onUpdateHighScore fails (e.g. API error), the game won't crash/logout.
     try {
       onUpdateHighScore(scoreRef.current);
     } catch (error) {
@@ -584,18 +535,15 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
   };
 
   const handleRestart = () => {
-    // Clear any pending timers
     if (gameOverTimerRef.current) clearTimeout(gameOverTimerRef.current);
 
-    // Reset state refs BEFORE calling initLevel
     gameStateRef.current = 'start';
     initLevel();
     if (containerRef.current) containerRef.current.focus();
   };
 
-  // Input Handling
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (gameStateRef.current !== 'playing') return; // Disable input if not playing
+    if (gameStateRef.current !== 'playing') return; 
 
     initAudio();
     if (['ArrowLeft', 'ArrowRight', 'ArrowUp', ' '].includes(e.key)) {
@@ -612,9 +560,6 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
     if (['ArrowUp', 'Up', ' '].includes(e.key)) keysRef.current.up = false;
   };
 
-  // ==========================================
-  // RENDER
-  // ==========================================
   return (
     <div
       ref={containerRef}
@@ -713,7 +658,6 @@ const KangarooGame: React.FC<KangarooGameProps> = ({
   );
 };
 
-// Styles
 const modalOverlayStyle: React.CSSProperties = {
   position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
   background: 'rgba(0,0,0,0.7)',
